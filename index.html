@@ -582,4 +582,49 @@
                 return;
             }
 
-            document.getElementById('pdf-header-
+            document.getElementById('pdf-header-info').innerHTML = `
+                <p><b>ชื่อเจ้าของบ้าน:</b> ${owner}</p>
+                <p><b>บ้านเลขที่:</b> ${houseNo}</p>
+                <p><b>วันที่สำรวจ:</b> ${date}</p>
+            `;
+
+            const tbody = document.getElementById('pdf-table-body');
+            tbody.innerHTML = '';
+
+            document.querySelectorAll('.damage-item-card').forEach((card, idx) => {
+                const descBefore = card.querySelector('.item-desc-before').value;
+                const imgBefore = card.querySelector('.item-img-before-data').value;
+                const descAfter = card.querySelector('.item-desc-after').value;
+                const imgAfter = card.querySelector('.item-img-after-data').value;
+                const status = card.querySelector('.item-status').value;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="border border-slate-300 p-2 text-center">${idx + 1}</td>
+                    <td class="border border-slate-300 p-2 text-center">${imgBefore ? `<img src="${imgBefore}" style="width:60px; height:60px; object-fit:cover; margin:auto;">` : '-'}</td>
+                    <td class="border border-slate-300 p-2">${descBefore}</td>
+                    <td class="border border-slate-300 p-2 text-center">${imgAfter ? `<img src="${imgAfter}" style="width:60px; height:60px; object-fit:cover; margin:auto;">` : '-'}</td>
+                    <td class="border border-slate-300 p-2">${descAfter}<br><span class="text-xs font-semibold text-blue-600">[สถานะ: ${status}]</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('pdf-sig-project').innerHTML = `<img src="${canvases.project.toDataURL()}" style="max-height: 50px; margin: auto;">`;
+            document.getElementById('pdf-sig-owner').innerHTML = `<img src="${canvases.owner.toDataURL()}" style="max-height: 50px; margin: auto;">`;
+
+            const element = document.getElementById('pdf-template');
+            element.classList.remove('hidden');
+
+            html2pdf().from(element).set({
+                margin: 10,
+                filename: `รายงานความเสียหาย_บ้านเลขที่_${houseNo}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).save().then(() => {
+                element.classList.add('hidden');
+            });
+        }
+    </script>
+</body>
+</html>
