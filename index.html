@@ -295,7 +295,7 @@
                 <div class="md:col-span-4 space-y-2">
                     <input type="text" placeholder="รายละเอียดความเสียหายก่อนแก้ไข" class="w-full px-3 py-2 border rounded text-sm bg-white item-desc-before" value="${itemData.descBefore || ''}">
                     <div class="flex items-center space-x-2">
-                        <input type="file" accept="image/*" class="text-xs item-img-before-file" onchange="previewImage(this, 'img-prev-before-${index}')">
+                        <input type="file" accept="image/*" class="text-xs item-img-before-file" onchange="compressImage(this, 'img-prev-before-${index}')">
                         <input type="hidden" class="item-img-before-data" value="${itemData.imgBefore || ''}">
                         <img id="img-prev-before-${index}" src="${itemData.imgBefore || ''}" class="w-10 h-10 object-cover rounded border ${itemData.imgBefore ? '' : 'hidden'}">
                     </div>
@@ -303,7 +303,7 @@
                 <div class="md:col-span-4 space-y-2">
                     <input type="text" placeholder="รายละเอียดการแก้ไข" class="w-full px-3 py-2 border rounded text-sm bg-white item-desc-after" value="${itemData.descAfter || ''}">
                     <div class="flex items-center space-x-2">
-                        <input type="file" accept="image/*" class="text-xs item-img-after-file" onchange="previewImage(this, 'img-prev-after-${index}')">
+                        <input type="file" accept="image/*" class="text-xs item-img-after-file" onchange="compressImage(this, 'img-prev-after-${index}')">
                         <input type="hidden" class="item-img-after-data" value="${itemData.imgAfter || ''}">
                         <img id="img-prev-after-${index}" src="${itemData.imgAfter || ''}" class="w-10 h-10 object-cover rounded border ${itemData.imgAfter ? '' : 'hidden'}">
                     </div>
@@ -328,14 +328,44 @@
             });
         }
 
-        function previewImage(input, previewId) {
+        // ระบบบีบอัดรูปภาพอัตโนมัติป้องกันหน่วยความจำเต็ม
+        function compressImage(input, previewId) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const img = document.getElementById(previewId);
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 800;
+                        const MAX_HEIGHT = 800;
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height) {
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
+                        } else {
+                            if (height > MAX_HEIGHT) {
+                                width *= MAX_HEIGHT / height;
+                                height = MAX_HEIGHT;
+                            }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                        
+                        const previewImg = document.getElementById(previewId);
+                        previewImg.src = compressedDataUrl;
+                        previewImg.classList.remove('hidden');
+                        input.nextElementSibling.value = compressedDataUrl;
+                    }
                     img.src = e.target.result;
-                    img.classList.remove('hidden');
-                    input.nextElementSibling.value = e.target.result;
                 }
                 reader.readAsDataURL(input.files[0]);
             }
@@ -383,18 +413,22 @@
 
             const record = { id, owner, houseNo, date, items, sigProject, sigOwner };
 
-            let records = JSON.parse(localStorage.getItem('damage_records') || '[]');
-            const existingIdx = records.findIndex(r => r.id === id);
-            if (existingIdx >= 0) {
-                records[existingIdx] = record;
-            } else {
-                records.push(record);
-            }
+            try {
+                let records = JSON.parse(localStorage.getItem('damage_records') || '[]');
+                const existingIdx = records.findIndex(r => r.id === id);
+                if (existingIdx >= 0) {
+                    records[existingIdx] = record;
+                } else {
+                    records.push(record);
+                }
 
-            localStorage.setItem('damage_records', JSON.stringify(records));
-            alert('บันทึกข้อมูลสำเร็จเรียบร้อยแล้ว!');
-            resetForm();
-            switchTab(2);
+                localStorage.setItem('damage_records', JSON.stringify(records));
+                alert('บันทึกข้อมูลสำเร็จเรียบร้อยแล้ว!');
+                resetForm();
+                switchTab(2);
+            } catch (err) {
+                alert('หน่วยความจำเต็ม! กรุณาลดขนาดหรือจำนวนรูปภาพลง');
+            }
         }
 
         function resetForm() {
@@ -544,53 +578,8 @@
             const date = document.getElementById('survey-date').value;
 
             if (!owner || !houseNo) {
-                alert('กรุณากรอกชื่อเจ้าของบ้านและบ้านเลขเหล็กก่อนดาวน์โหลด PDF');
+                alert('กรุณากรอกชื่อเจ้าของบ้านและบ้านเลขที่ก่อนดาวน์โหลด PDF');
                 return;
             }
 
-            document.getElementById('pdf-header-info').innerHTML = `
-                <p><b>ชื่อเจ้าของบ้าน:</b> ${owner}</p>
-                <p><b>บ้านเลขที่:</b> ${houseNo}</p>
-                <p><b>วันที่สำรวจ:</b> ${date}</p>
-            `;
-
-            const tbody = document.getElementById('pdf-table-body');
-            tbody.innerHTML = '';
-
-            document.querySelectorAll('.damage-item-card').forEach((card, idx) => {
-                const descBefore = card.querySelector('.item-desc-before').value;
-                const imgBefore = card.querySelector('.item-img-before-data').value;
-                const descAfter = card.querySelector('.item-desc-after').value;
-                const imgAfter = card.querySelector('.item-img-after-data').value;
-                const status = card.querySelector('.item-status').value;
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="border border-slate-300 p-2 text-center">${idx + 1}</td>
-                    <td class="border border-slate-300 p-2 text-center">${imgBefore ? `<img src="${imgBefore}" style="width:60px; height:60px; object-fit:cover; margin:auto;">` : '-'}</td>
-                    <td class="border border-slate-300 p-2">${descBefore}</td>
-                    <td class="border border-slate-300 p-2 text-center">${imgAfter ? `<img src="${imgAfter}" style="width:60px; height:60px; object-fit:cover; margin:auto;">` : '-'}</td>
-                    <td class="border border-slate-300 p-2">${descAfter}<br><span class="text-xs font-semibold text-blue-600">[สถานะ: ${status}]</span></td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            document.getElementById('pdf-sig-project').innerHTML = `<img src="${canvases.project.toDataURL()}" style="max-height: 50px; margin: auto;">`;
-            document.getElementById('pdf-sig-owner').innerHTML = `<img src="${canvases.owner.toDataURL()}" style="max-height: 50px; margin: auto;">`;
-
-            const element = document.getElementById('pdf-template');
-            element.classList.remove('hidden');
-
-            html2pdf().from(element).set({
-                margin: 10,
-                filename: `รายงานความเสียหาย_บ้านเลขที่_${houseNo}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            }).save().then(() => {
-                element.classList.add('hidden');
-            });
-        }
-    </script>
-</body>
-</html>
+            document.getElementById('pdf-header-
