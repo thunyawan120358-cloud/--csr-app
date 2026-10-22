@@ -3,14 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบบันทึกและติดตามความเสียหายบ้านข้างเคียง</title>
-    <!-- Tailwind CSS -->
+    <title>ระบบบันทึกความเสียหายบ้านข้างเคียง</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- html2pdf.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
@@ -18,16 +14,14 @@
         canvas { touch-action: none; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 pb-20 md:pb-0">
+<body class="bg-slate-50 text-slate-800 pb-24 md:pb-0">
 
-    <!-- Navbar / Header -->
     <header class="bg-blue-700 text-white shadow-md sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center space-x-3">
                 <i class="fa-solid fa-house-chimney-crack text-2xl"></i>
                 <h1 class="text-lg md:text-xl font-bold">ระบบบันทึกความเสียหายบ้านข้างเคียง</h1>
             </div>
-            <!-- Desktop Navigation -->
             <nav class="hidden md:flex space-x-2">
                 <button onclick="switchTab(1)" id="nav-btn-1" class="px-4 py-2 rounded-lg font-medium bg-blue-800 text-white transition"><i class="fa-solid fa-file-pen mr-2"></i>1. บันทึกข้อมูล</button>
                 <button onclick="switchTab(2)" id="nav-btn-2" class="px-4 py-2 rounded-lg font-medium hover:bg-blue-600 transition"><i class="fa-solid fa-list-check mr-2"></i>2. รายการ & แก้ไข</button>
@@ -36,172 +30,125 @@
         </div>
     </header>
 
-    <!-- Main Container -->
     <main class="max-w-7xl mx-auto px-4 py-6">
-
-        <!-- ================= PAGE 1: FORM & PDF ================= -->
+        <!-- PAGE 1 -->
         <section id="page-1" class="space-y-6">
             <div class="bg-white rounded-xl shadow-sm p-5 md:p-8 border border-slate-100">
-                <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-100">
-                    <h2 class="text-xl font-bold text-blue-900"><i class="fa-solid fa-clipboard-list mr-2"></i>แบบฟอร์มสำรวจความเสียหายบ้านข้างเคียง</h2>
+                <div class="flex justify-between items-center mb-6 pb-4 border-b">
+                    <h2 class="text-xl font-bold text-blue-900"><i class="fa-solid fa-clipboard-list mr-2"></i>แบบฟอร์มสำรวจความเสียหาย</h2>
                     <span id="form-mode-badge" class="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">สร้างรายการใหม่</span>
                 </div>
 
-                <form id="damage-form" onsubmit="saveDamageRecord(event)" class="space-y-6">
+                <form id="damage-form" onsubmit="saveRecord(event)" class="space-y-6">
                     <input type="hidden" id="record-id">
                     
-                    <!-- House Details -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-sm font-semibold mb-1">ชื่อเจ้าของบ้าน <span class="text-red-500">*</span></label>
-                            <input type="text" id="owner-name" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="text" id="owner-name" required class="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                         <div>
                             <label class="block text-sm font-semibold mb-1">บ้านเลขที่ <span class="text-red-500">*</span></label>
-                            <input type="text" id="house-no" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="text" id="house-no" required class="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                         <div>
                             <label class="block text-sm font-semibold mb-1">วันที่สำรวจ <span class="text-red-500">*</span></label>
-                            <input type="date" id="survey-date" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="date" id="survey-date" required class="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                     </div>
 
-                    <!-- Items Table / Cards -->
                     <div>
                         <div class="flex justify-between items-center mb-3">
                             <h3 class="font-bold text-slate-700">รายการจุดความเสียหาย</h3>
-                            <button type="button" onclick="addDamageItemRow()" class="px-3 py-1.5 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition">
+                            <button type="button" onclick="addItemRow()" class="px-3 py-1.5 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition">
                                 <i class="fa-solid fa-plus mr-1"></i> เพิ่มรายการความเสียหาย
                             </button>
                         </div>
-                        
-                        <div id="damage-items-container" class="space-y-4">
-                            <!-- Items will be injected here -->
-                        </div>
+                        <div id="items-container" class="space-y-4"></div>
                     </div>
 
-                    <!-- Signatures Section -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t">
                         <div class="bg-slate-50 p-4 rounded-xl border">
                             <label class="block text-sm font-semibold mb-2 text-center">ลงนาม: ตัวแทนโครงการ</label>
                             <div class="border bg-white rounded-lg overflow-hidden relative" style="height: 150px;">
                                 <canvas id="sig-project" class="w-full h-full cursor-crosshair"></canvas>
                             </div>
                             <div class="flex justify-between mt-2">
-                                <span class="text-xs text-slate-500">ใช้นิ้วหรือเมาส์เซ็นในกรอบ</span>
+                                <span class="text-xs text-slate-500">ใช้นิ้วหรือเมาส์เซ็น</span>
                                 <button type="button" onclick="clearSig('project')" class="text-xs text-red-600 hover:underline"><i class="fa-solid fa-eraser mr-1"></i>ล้างลายเซ็น</button>
                             </div>
                         </div>
-
                         <div class="bg-slate-50 p-4 rounded-xl border">
                             <label class="block text-sm font-semibold mb-2 text-center">ลงนาม: เจ้าของบ้าน</label>
                             <div class="border bg-white rounded-lg overflow-hidden relative" style="height: 150px;">
                                 <canvas id="sig-owner" class="w-full h-full cursor-crosshair"></canvas>
                             </div>
                             <div class="flex justify-between mt-2">
-                                <span class="text-xs text-slate-500">ใช้นิ้วหรือเมาส์เซ็นในกรอบ</span>
+                                <span class="text-xs text-slate-500">ใช้นิ้วหรือเมาส์เซ็น</span>
                                 <button type="button" onclick="clearSig('owner')" class="text-xs text-red-600 hover:underline"><i class="fa-solid fa-eraser mr-1"></i>ล้างลายเซ็น</button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Action Buttons -->
-                    <div class="flex flex-wrap gap-3 justify-end pt-4 border-t border-slate-100">
-                        <button type="button" onclick="resetForm()" class="px-5 py-2.5 bg-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-300 transition">
-                            <i class="fa-solid fa-rotate-left mr-2"></i>ล้างฟอร์มใหม่
-                        </button>
-                        <button type="submit" class="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 shadow-md transition">
-                            <i class="fa-solid fa-floppy-disk mr-2"></i>บันทึกข้อมูล
-                        </button>
-                        <button type="button" onclick="exportPDF()" class="px-6 py-2.5 bg-rose-600 text-white font-medium rounded-lg hover:bg-rose-700 shadow-md transition">
-                            <i class="fa-solid fa-file-pdf mr-2"></i>ดาวน์โหลด PDF
-                        </button>
+                    <div class="flex flex-wrap gap-3 justify-end pt-4 border-t">
+                        <button type="button" onclick="resetForm()" class="px-5 py-2.5 bg-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-300">ล้างฟอร์ม</button>
+                        <button type="submit" class="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 shadow-md">บันทึกข้อมูล</button>
+                        <button type="button" onclick="exportPDF()" class="px-6 py-2.5 bg-rose-600 text-white font-medium rounded-lg hover:bg-rose-700 shadow-md">ดาวน์โหลด PDF</button>
                     </div>
                 </form>
             </div>
         </section>
 
-        <!-- ================= PAGE 2: RECORDS & EDIT ================= -->
+        <!-- PAGE 2 -->
         <section id="page-2" class="hidden space-y-6">
             <div class="bg-white rounded-xl shadow-sm p-5 md:p-8 border border-slate-100">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 pb-4 border-b gap-4">
-                    <h2 class="text-xl font-bold text-blue-900"><i class="fa-solid fa-list-check mr-2"></i>รายการบันทึกความเสียหายทั้งหมด</h2>
+                    <h2 class="text-xl font-bold text-blue-900"><i class="fa-solid fa-list-check mr-2"></i>รายการบันทึกทั้งหมด</h2>
                     <div class="flex items-center space-x-2 w-full md:w-auto">
-                        <input type="text" id="search-box" onkeyup="renderRecordsList()" placeholder="ค้นหาตามชื่อ หรือ บ้านเลขที่..." class="w-full md:w-64 px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
-                        <button onclick="clearAllData()" class="px-3 py-2 bg-red-100 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-200 transition" title="ล้างข้อมูลทั้งหมดเพื่อแก้ปัญหาค้าง">ล้างข้อมูลทั้งหมด</button>
+                        <input type="text" id="search-box" onkeyup="renderList()" placeholder="ค้นหาชื่อ หรือ บ้านเลขที่..." class="w-full md:w-64 px-3 py-2 border rounded-lg text-sm outline-none">
+                        <button onclick="clearAllData()" class="px-3 py-2 bg-red-100 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-200">ล้างข้อมูลทั้งหมด</button>
                     </div>
                 </div>
-
-                <div id="records-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <!-- Cards injected here -->
-                </div>
+                <div id="records-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
             </div>
         </section>
 
-        <!-- ================= PAGE 3: DASHBOARD ================= -->
+        <!-- PAGE 3 -->
         <section id="page-3" class="hidden space-y-6">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
-                    <div>
-                        <p class="text-sm text-slate-500 font-medium">บ้านที่สำรวจทั้งหมด</p>
-                        <h3 id="stat-total-houses" class="text-2xl font-bold text-blue-600 mt-1">0</h3>
-                    </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border flex items-center justify-between">
+                    <div><p class="text-sm text-slate-500">บ้านที่สำรวจ</p><h3 id="stat-houses" class="text-2xl font-bold text-blue-600 mt-1">0</h3></div>
                     <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl"><i class="fa-solid fa-house"></i></div>
                 </div>
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
-                    <div>
-                        <p class="text-sm text-slate-500 font-medium">จุดเสียหายทั้งหมด</p>
-                        <h3 id="stat-total-damages" class="text-2xl font-bold text-amber-600 mt-1">0</h3>
-                    </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border flex items-center justify-between">
+                    <div><p class="text-sm text-slate-500">จุดเสียหายทั้งหมด</p><h3 id="stat-damages" class="text-2xl font-bold text-amber-600 mt-1">0</h3></div>
                     <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-xl"><i class="fa-solid fa-triangle-exclamation"></i></div>
                 </div>
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
-                    <div>
-                        <p class="text-sm text-slate-500 font-medium">แก้ไขเสร็จสิ้น</p>
-                        <h3 id="stat-completed" class="text-2xl font-bold text-emerald-600 mt-1">0</h3>
-                    </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border flex items-center justify-between">
+                    <div><p class="text-sm text-slate-500">เสร็จสิ้น</p><h3 id="stat-completed" class="text-2xl font-bold text-emerald-600 mt-1">0</h3></div>
                     <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-xl"><i class="fa-solid fa-circle-check"></i></div>
                 </div>
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
-                    <div>
-                        <p class="text-sm text-slate-500 font-medium">% ความคืบหน้ารวม</p>
-                        <h3 id="stat-progress" class="text-2xl font-bold text-indigo-600 mt-1">0%</h3>
-                    </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border flex items-center justify-between">
+                    <div><p class="text-sm text-slate-500">% ความคืบหน้า</p><h3 id="stat-progress" class="text-2xl font-bold text-indigo-600 mt-1">0%</h3></div>
                     <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-xl"><i class="fa-solid fa-chart-line"></i></div>
                 </div>
             </div>
-
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100">
-                    <h3 class="font-bold text-slate-700 mb-4">สัดส่วนสถานะการซ่อมแซม</h3>
-                    <div class="relative" style="height: 280px;"><canvas id="statusChart"></canvas></div>
-                </div>
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100">
-                    <h3 class="font-bold text-slate-700 mb-4">จำนวนจุดเสียหายแยกตามบ้านเลขที่</h3>
-                    <div class="relative" style="height: 280px;"><canvas id="houseChart"></canvas></div>
-                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border"><h3 class="font-bold text-slate-700 mb-4">สัดส่วนสถานะการซ่อมแซม</h3><div class="relative" style="height: 280px;"><canvas id="statusChart"></canvas></div></div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border"><h3 class="font-bold text-slate-700 mb-4">จุดเสียหายแยกตามบ้านเลขที่</h3><div class="relative" style="height: 280px;"><canvas id="houseChart"></canvas></div></div>
             </div>
         </section>
-
     </main>
 
-    <!-- Bottom Navigation Bar for Mobile -->
-    <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around py-3 shadow-lg z-50">
-        <button onclick="switchTab(1)" id="mob-btn-1" class="flex flex-col items-center text-blue-600 font-semibold text-xs">
-            <i class="fa-solid fa-file-pen text-lg mb-1"></i>บันทึก
-        </button>
-        <button onclick="switchTab(2)" id="mob-btn-2" class="flex flex-col items-center text-slate-400 font-semibold text-xs">
-            <i class="fa-solid fa-list-check text-lg mb-1"></i>รายการ
-        </button>
-        <button onclick="switchTab(3)" id="mob-btn-3" class="flex flex-col items-center text-slate-400 font-semibold text-xs">
-            <i class="fa-solid fa-chart-pie text-lg mb-1"></i>แดชบอร์ด
-        </button>
+    <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around py-3 shadow-lg z-50">
+        <button onclick="switchTab(1)" id="mob-btn-1" class="flex flex-col items-center text-blue-600 font-semibold text-xs"><i class="fa-solid fa-file-pen text-lg mb-1"></i>บันทึก</button>
+        <button onclick="switchTab(2)" id="mob-btn-2" class="flex flex-col items-center text-slate-400 font-semibold text-xs"><i class="fa-solid fa-list-check text-lg mb-1"></i>รายการ</button>
+        <button onclick="switchTab(3)" id="mob-btn-3" class="flex flex-col items-center text-slate-400 font-semibold text-xs"><i class="fa-solid fa-chart-pie text-lg mb-1"></i>แดชบอร์ด</button>
     </div>
 
-    <!-- Hidden PDF Template -->
     <div id="pdf-template" class="hidden bg-white p-6 text-slate-800" style="width: 210mm;">
         <h1 class="text-xl font-bold text-center mb-2">รายงานความเสียหายบ้านข้างเคียง</h1>
-        <div id="pdf-header-info" class="mb-4 text-sm grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded"></div>
+        <div id="pdf-header" class="mb-4 text-sm grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded"></div>
         <table class="w-full border-collapse border border-slate-300 text-xs mb-6">
             <thead>
                 <tr class="bg-slate-100">
@@ -212,339 +159,125 @@
                     <th class="border border-slate-300 p-2">รายละเอียดการแก้ไข / สถานะ</th>
                 </tr>
             </thead>
-            <tbody id="pdf-table-body"></tbody>
+            <tbody id="pdf-tbody"></tbody>
         </table>
         <div class="flex justify-between mt-8 text-sm">
-            <div class="text-center">
-                <div id="pdf-sig-project" class="h-16 mb-1 flex items-center justify-center"></div>
-                <p>.................................................</p>
-                <p class="font-semibold">ตัวแทนโครงการ</p>
-            </div>
-            <div class="text-center">
-                <div id="pdf-sig-owner" class="h-16 mb-1 flex items-center justify-center"></div>
-                <p>.................................................</p>
-                <p class="font-semibold">เจ้าของบ้าน</p>
-            </div>
+            <div class="text-center"><div id="pdf-sig-proj" class="h-16 mb-1 flex items-center justify-center"></div><p>.................................................</p><p class="font-semibold">ตัวแทนโครงการ</p></div>
+            <div class="text-center"><div id="pdf-sig-own" class="h-16 mb-1 flex items-center justify-center"></div><p>.................................................</p><p class="font-semibold">เจ้าของบ้าน</p></div>
         </div>
     </div>
 
-    <!-- Script Application Logic -->
     <script>
-        let canvases = { project: null, owner: null };
-        let contexts = { project: null, owner: null };
-        let isDrawing = { project: false, owner: false };
+        let cvs = { project: null, owner: null };
+        let ctxs = { project: null, owner: null };
+        let drawing = { project: false, owner: false };
         let charts = { status: null, house: null };
 
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('survey-date').valueAsDate = new Date();
-            initSignatures();
-            addDamageItemRow();
-            loadRecords();
+            initSigs();
+            addItemRow();
+            renderList();
             updateDashboard();
         });
 
-        function initSignatures() {
-            ['project', 'owner'].forEach(type => {
-                const canvas = document.getElementById(`sig-${type}`);
-                canvases[type] = canvas;
-                contexts[type] = canvas.getContext('2d');
-                
-                function resizeCanvas() {
-                    const rect = canvas.parentElement.getBoundingClientRect();
-                    canvas.width = rect.width;
-                    canvas.height = rect.height;
-                }
-                resizeCanvas();
-                window.addEventListener('resize', resizeCanvas);
-
-                canvas.addEventListener('mousedown', startDraw);
-                canvas.addEventListener('mousemove', draw);
-                canvas.addEventListener('mouseup', stopDraw);
-                canvas.addEventListener('mouseleave', stopDraw);
-
-                canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDraw(e.touches[0]); });
-                canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e.touches[0]); });
-                canvas.addEventListener('touchend', stopDraw);
-
-                function startDraw(e) {
-                    isDrawing[type] = true;
-                    const rect = canvas.getBoundingClientRect();
-                    contexts[type].beginPath();
-                    contexts[type].moveTo(e.clientX - rect.left, e.clientY - rect.top);
-                }
-                function draw(e) {
-                    if (!isDrawing[type]) return;
-                    const rect = canvas.getBoundingClientRect();
-                    contexts[type].lineTo(e.clientX - rect.left, e.clientY - rect.top);
-                    contexts[type].stroke();
-                }
-                function stopDraw() { isDrawing[type] = false; }
+        function initSigs() {
+            ['project', 'owner'].forEach(t => {
+                const c = document.getElementById(`sig-${t}`);
+                cvs[t] = c; ctxs[t] = c.getContext('2d');
+                const resize = () => { c.width = c.parentElement.clientWidth; c.height = c.parentElement.clientHeight; };
+                resize(); window.addEventListener('resize', resize);
+                c.addEventListener('mousedown', e => start(e, t));
+                c.addEventListener('mousemove', e => move(e, t));
+                ['mouseup', 'mouseleave'].forEach(ev => c.addEventListener(ev, () => drawing[t] = false));
+                c.addEventListener('touchstart', e => { e.preventDefault(); start(e.touches[0], t); });
+                c.addEventListener('touchmove', e => { e.preventDefault(); move(e.touches[0], t); });
+                c.addEventListener('touchend', () => drawing[t] = false);
             });
         }
-
-        function clearSig(type) {
-            contexts[type].clearRect(0, 0, canvases[type].width, canvases[type].height);
+        function start(e, t) {
+            drawing[t] = true; const r = cvs[t].getBoundingClientRect();
+            ctxs[t].beginPath(); ctxs[t].moveTo(e.clientX - r.left, e.clientY - r.top);
         }
+        function move(e, t) {
+            if (!drawing[t]) return; const r = cvs[t].getBoundingClientRect();
+            ctxs[t].lineTo(e.clientX - r.left, e.clientY - r.top); ctxs[t].stroke();
+        }
+        function clearSig(t) { ctxs[t].clearRect(0, 0, cvs[t].width, cvs[t].height); }
 
-        function addDamageItemRow(itemData = {}) {
-            const container = document.getElementById('damage-items-container');
-            const index = container.children.length + 1;
+        function addItemRow(d = {}) {
+            const c = document.getElementById('items-container');
+            const idx = c.children.length + 1;
             const div = document.createElement('div');
-            div.className = 'damage-item-card p-4 bg-slate-50 border rounded-xl grid grid-cols-1 md:grid-cols-12 gap-3 items-center';
+            div.className = 'item-card p-4 bg-slate-50 border rounded-xl grid grid-cols-1 md:grid-cols-12 gap-3 items-center';
             div.innerHTML = `
-                <div class="md:col-span-1 text-center font-bold text-blue-700 item-index">#${index}</div>
+                <div class="md:col-span-1 text-center font-bold text-blue-700 item-idx">#${idx}</div>
                 <div class="md:col-span-4 space-y-2">
-                    <input type="text" placeholder="รายละเอียดความเสียหายก่อนแก้ไข" class="w-full px-3 py-2 border rounded text-sm bg-white item-desc-before" value="${itemData.descBefore || ''}">
+                    <input type="text" placeholder="รายละเอียดก่อนแก้ไข" class="w-full px-3 py-2 border rounded text-sm bg-white item-db" value="${d.descBefore || ''}">
                     <div class="flex items-center space-x-2">
-                        <input type="file" accept="image/*" class="text-xs item-img-before-file" onchange="compressImage(this, 'img-prev-before-${index}')">
-                        <input type="hidden" class="item-img-before-data" value="${itemData.imgBefore || ''}">
-                        <img id="img-prev-before-${index}" src="${itemData.imgBefore || ''}" class="w-10 h-10 object-cover rounded border ${itemData.imgBefore ? '' : 'hidden'}">
+                        <input type="file" accept="image/*" class="text-xs" onchange="compress(this, 'prev-b-${idx}')">
+                        <input type="hidden" class="item-ib" value="${d.imgBefore || ''}">
+                        <img id="prev-b-${idx}" src="${d.imgBefore || ''}" class="w-10 h-10 object-cover rounded border ${d.imgBefore ? '' : 'hidden'}">
                     </div>
                 </div>
                 <div class="md:col-span-4 space-y-2">
-                    <input type="text" placeholder="รายละเอียดการแก้ไข" class="w-full px-3 py-2 border rounded text-sm bg-white item-desc-after" value="${itemData.descAfter || ''}">
+                    <input type="text" placeholder="รายละเอียดการแก้ไข" class="w-full px-3 py-2 border rounded text-sm bg-white item-da" value="${d.descAfter || ''}">
                     <div class="flex items-center space-x-2">
-                        <input type="file" accept="image/*" class="text-xs item-img-after-file" onchange="compressImage(this, 'img-prev-after-${index}')">
-                        <input type="hidden" class="item-img-after-data" value="${itemData.imgAfter || ''}">
-                        <img id="img-prev-after-${index}" src="${itemData.imgAfter || ''}" class="w-10 h-10 object-cover rounded border ${itemData.imgAfter ? '' : 'hidden'}">
+                        <input type="file" accept="image/*" class="text-xs" onchange="compress(this, 'prev-a-${idx}')">
+                        <input type="hidden" class="item-ia" value="${d.imgAfter || ''}">
+                        <img id="prev-a-${idx}" src="${d.imgAfter || ''}" class="w-10 h-10 object-cover rounded border ${d.imgAfter ? '' : 'hidden'}">
                     </div>
                 </div>
                 <div class="md:col-span-2">
-                    <select class="w-full px-2 py-2 border rounded text-sm bg-white item-status">
-                        <option value="รอดำเนินการ" ${itemData.status === 'รอดำเนินการ' ? 'selected' : ''}>รอดำเนินการ</option>
-                        <option value="กำลังดำเนินการ" ${itemData.status === 'กำลังดำเนินการ' ? 'selected' : ''}>กำลังดำเนินการ</option>
-                        <option value="เสร็จสิ้น" ${itemData.status === 'เสร็จสิ้น' ? 'selected' : ''}>เสร็จสิ้น</option>
+                    <select class="w-full px-2 py-2 border rounded text-sm bg-white item-st">
+                        <option value="รอดำเนินการ" ${d.status === 'รอดำเนินการ' ? 'selected' : ''}>รอดำเนินการ</option>
+                        <option value="กำลังดำเนินการ" ${d.status === 'กำลังดำเนินการ' ? 'selected' : ''}>กำลังดำเนินการ</option>
+                        <option value="เสร็จสิ้น" ${d.status === 'เสร็จสิ้น' ? 'selected' : ''}>เสร็จสิ้น</option>
                     </select>
                 </div>
                 <div class="md:col-span-1 text-center">
-                    <button type="button" onclick="this.closest('.damage-item-card').remove(); updateIndices();" class="text-red-500 hover:text-red-700 p-2"><i class="fa-solid fa-trash"></i></button>
+                    <button type="button" onclick="this.closest('.item-card').remove(); updateIdx();" class="text-red-500 p-2"><i class="fa-solid fa-trash"></i></button>
                 </div>
             `;
-            container.appendChild(div);
+            c.appendChild(div);
         }
 
-        function updateIndices() {
-            document.querySelectorAll('.damage-item-card').forEach((card, idx) => {
-                card.querySelector('.item-index').innerText = `#${idx + 1}`;
-            });
+        function updateIdx() {
+            document.querySelectorAll('.item-card').forEach((el, i) => el.querySelector('.item-idx').innerText = `#${i + 1}`);
         }
 
-        function compressImage(input, previewId) {
+        function compress(input, prevId) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = e => {
                     const img = new Image();
-                    img.onload = function() {
+                    img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 600;
-                        const MAX_HEIGHT = 600;
-                        let width = img.width;
-                        let height = img.height;
-
-                        if (width > height) {
-                            if (width > MAX_WIDTH) {
-                                height *= MAX_WIDTH / width;
-                                width = MAX_WIDTH;
-                            }
-                        } else {
-                            if (height > MAX_HEIGHT) {
-                                width *= MAX_HEIGHT / height;
-                                height = MAX_HEIGHT;
-                            }
-                        }
-
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        
-                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
-                        
-                        const previewImg = document.getElementById(previewId);
-                        previewImg.src = compressedDataUrl;
-                        previewImg.classList.remove('hidden');
-                        input.nextElementSibling.value = compressedDataUrl;
-                    }
+                        const MAX = 500; let w = img.width, h = img.height;
+                        if (w > h && w > MAX) { h *= MAX / w; w = MAX; }
+                        else if (h > MAX) { w *= MAX / h; h = MAX; }
+                        canvas.width = w; canvas.height = h;
+                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                        const url = canvas.toDataURL('image/jpeg', 0.5);
+                        document.getElementById(prevId).src = url;
+                        document.getElementById(prevId).classList.remove('hidden');
+                        input.nextElementSibling.value = url;
+                    };
                     img.src = e.target.result;
-                }
+                };
                 reader.readAsDataURL(input.files[0]);
             }
         }
 
-        function switchTab(tabNo) {
+        function switchTab(no) {
             [1, 2, 3].forEach(i => {
                 document.getElementById(`page-${i}`).classList.add('hidden');
                 document.getElementById(`nav-btn-${i}`).className = "px-4 py-2 rounded-lg font-medium hover:bg-blue-600 transition";
                 document.getElementById(`mob-btn-${i}`).className = "flex flex-col items-center text-slate-400 font-semibold text-xs";
             });
-            document.getElementById(`page-${tabNo}`).classList.remove('hidden');
-            document.getElementById(`nav-btn-${tabNo}`).className = "px-4 py-2 rounded-lg font-medium bg-blue-800 text-white transition";
-            document.getElementById(`mob-btn-${tabNo}`).className = "flex flex-col items-center text-blue-600 font-semibold text-xs";
-            
-            if (tabNo === 2) renderRecordsList();
-            if (tabNo === 3) updateDashboard();
+            document.getElementById(`page-${no}`).classList.remove('hidden');
+            document.getElementById(`nav-btn-${no}`).className = "px-4 py-2 rounded-lg font-medium bg-blue-800 text-white transition";
+            document.getElementById(`mob-btn-${no}`).className = "flex flex-col items-center text-blue-600 font-semibold text-xs";
+            if (no === 2) renderList();
+            if (no === 3) updateDashboard();
         }
-
-        function saveDamageRecord(e) {
-            e.preventDefault();
-            const id = document.getElementById('record-id').value || 'REC-' + Date.now();
-            const owner = document.getElementById('owner-name').value;
-            const houseNo = document.getElementById('house-no').value;
-            const date = document.getElementById('survey-date').value;
-
-            const items = [];
-            document.querySelectorAll('.damage-item-card').forEach(card => {
-                items.push({
-                    descBefore: card.querySelector('.item-desc-before').value,
-                    imgBefore: card.querySelector('.item-img-before-data').value,
-                    descAfter: card.querySelector('.item-desc-after').value,
-                    imgAfter: card.querySelector('.item-img-after-data').value,
-                    status: card.querySelector('.item-status').value
-                });
-            });
-
-            if (items.length === 0) {
-                alert('กรุณาเพิ่มรายการจุดความเสียหายอย่างน้อย 1 รายการ');
-                return;
-            }
-
-            const sigProject = canvases.project.toDataURL('image/jpeg', 0.7);
-            const sigOwner = canvases.owner.toDataURL('image/jpeg', 0.7);
-
-            const record = { id, owner, houseNo, date, items, sigProject, sigOwner };
-
-            try {
-                let records = JSON.parse(localStorage.getItem('damage_records') || '[]');
-                const existingIdx = records.findIndex(r => r.id === id);
-                if (existingIdx >= 0) {
-                    records[existingIdx] = record;
-                } else {
-                    records.push(record);
-                }
-
-                localStorage.setItem('damage_records', JSON.stringify(records));
-                alert('บันทึกข้อมูลสำเร็จเรียบร้อยแล้ว!');
-                resetForm();
-                switchTab(2);
-            } catch (err) {
-                alert('หน่วยความจำเต็ม! แนะนำให้กดปุ่ม "ล้างข้อมูลทั้งหมด" ในหน้ารายการ หรือลดจำนวนรูปภาพลง');
-            }
-        }
-
-        function resetForm() {
-            document.getElementById('damage-form').reset();
-            document.getElementById('record-id').value = '';
-            document.getElementById('survey-date').valueAsDate = new Date();
-            document.getElementById('damage-items-container').innerHTML = '';
-            clearSig('project');
-            clearSig('owner');
-            document.getElementById('form-mode-badge').innerText = "สร้างรายการใหม่";
-            addDamageItemRow();
-        }
-
-        function loadRecords() {
-            return JSON.parse(localStorage.getItem('damage_records') || '[]');
-        }
-
-        function clearAllData() {
-            if (confirm('คำเตือน: การล้างข้อมูลทั้งหมดจะลบรายการที่เคยบันทึกไว้ในเครื่องนี้ออกทั้งหมด คุณต้องการดำเนินการต่อหรือไม่?')) {
-                localStorage.removeItem('damage_records');
-                renderRecordsList();
-                updateDashboard();
-                alert('ล้างข้อมูลเรียบร้อยแล้ว');
-            }
-        }
-
-        function renderRecordsList() {
-            const container = document.getElementById('records-container');
-            const keyword = document.getElementById('search-box').value.toLowerCase();
-            const records = loadRecords();
-            container.innerHTML = '';
-
-            const filtered = records.filter(r => r.owner.toLowerCase().includes(keyword) || r.houseNo.toLowerCase().includes(keyword));
-
-            if (filtered.length === 0) {
-                container.innerHTML = `<div class="col-span-full text-center py-10 text-slate-400">ไม่พบรายการข้อมูลความเสียหาย</div>`;
-                return;
-            }
-
-            filtered.forEach(r => {
-                const total = r.items.length;
-                const completed = r.items.filter(i => i.status === 'เสร็จสิ้น').length;
-                const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
-
-                const card = document.createElement('div');
-                card.className = 'bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3 flex flex-col justify-between';
-                card.innerHTML = `
-                    <div>
-                        <div class="flex justify-between items-start">
-                            <h3 class="font-bold text-slate-800 text-lg">${r.owner}</h3>
-                            <span class="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-semibold rounded">บ้านเลขที่: ${r.houseNo}</span>
-                        </div>
-                        <p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-calendar mr-1"></i>วันที่สำรวจ: ${r.date}</p>
-                        <p class="text-xs text-slate-600 mt-2">จุดความเสียหาย: <span class="font-semibold">${total} จุด</span> (เสร็จสิ้น ${completed} จุด)</p>
-                        <div class="w-full bg-slate-100 rounded-full h-2 mt-2">
-                            <div class="bg-emerald-500 h-2 rounded-full" style="width: ${percent}%"></div>
-                        </div>
-                    </div>
-                    <div class="flex justify-end space-x-2 pt-3 border-t">
-                        <button onclick="editRecord('${r.id}')" class="px-3 py-1.5 bg-amber-500 text-white text-xs font-medium rounded hover:bg-amber-600"><i class="fa-solid fa-pen-to-square mr-1"></i>แก้ไข</button>
-                        <button onclick="deleteRecord('${r.id}')" class="px-3 py-1.5 bg-red-500 text-white text-xs font-medium rounded hover:bg-red-600"><i class="fa-solid fa-trash mr-1"></i>ลบ</button>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        function editRecord(id) {
-            const records = loadRecords();
-            const r = records.find(item => item.id === id);
-            if (!r) return;
-
-            document.getElementById('record-id').value = r.id;
-            document.getElementById('owner-name').value = r.owner;
-            document.getElementById('house-no').value = r.houseNo;
-            document.getElementById('survey-date').value = r.date;
-            document.getElementById('form-mode-badge').innerText = "แก้ไขข้อมูล: " + r.owner;
-
-            const container = document.getElementById('damage-items-container');
-            container.innerHTML = '';
-            r.items.forEach(item => addDamageItemRow(item));
-
-            if (r.sigProject) {
-                const img = new Image();
-                img.onload = () => contexts['project'].drawImage(img, 0, 0);
-                img.src = r.sigProject;
-            }
-            if (r.sigOwner) {
-                const img = new Image();
-                img.onload = () => contexts['owner'].drawImage(img, 0, 0);
-                img.src = r.sigOwner;
-            }
-
-            switchTab(1);
-        }
-
-        function deleteRecord(id) {
-            if (confirm('คุณต้องการลบรายการนี้ใช่หรือไม่?')) {
-                let records = loadRecords();
-                records = records.filter(r => r.id !== id);
-                localStorage.setItem('damage_records', JSON.stringify(records));
-                renderRecordsList();
-                updateDashboard();
-            }
-        }
-
-        function updateDashboard() {
-            const records = loadRecords();
-            let totalHouses = records.length;
-            let totalDamages = 0;
-            let completedCount = 0;
-            let statusCounts = { 'รอดำเนินการ': 0, 'กำลังดำเนินการ': 0, 'เสร็จสิ้น': 0 };
-            let houseDamageMap = {};
-
-            records.forEach(r => {
-                houseDamageMap[r.houseNo] = (houseDamageMap[r.houseNo] || 0) + r.items.length;
-                r.items.forEach(i => {
-                    totalDamages++;
-                    if
