@@ -126,8 +126,9 @@
             <div class="bg-white rounded-xl shadow-sm p-5 md:p-8 border border-slate-100">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 pb-4 border-b gap-4">
                     <h2 class="text-xl font-bold text-blue-900"><i class="fa-solid fa-list-check mr-2"></i>รายการบันทึกความเสียหายทั้งหมด</h2>
-                    <div class="w-full md:w-72">
-                        <input type="text" id="search-box" onkeyup="renderRecordsList()" placeholder="ค้นหาตามชื่อ หรือ บ้านเลขที่..." class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                    <div class="flex items-center space-x-2 w-full md:w-auto">
+                        <input type="text" id="search-box" onkeyup="renderRecordsList()" placeholder="ค้นหาตามชื่อ หรือ บ้านเลขที่..." class="w-full md:w-64 px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                        <button onclick="clearAllData()" class="px-3 py-2 bg-red-100 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-200 transition" title="ล้างข้อมูลทั้งหมดเพื่อแก้ปัญหาค้าง">ล้างข้อมูลทั้งหมด</button>
                     </div>
                 </div>
 
@@ -328,7 +329,6 @@
             });
         }
 
-        // ระบบบีบอัดรูปภาพอัตโนมัติป้องกันหน่วยความจำเต็ม
         function compressImage(input, previewId) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
@@ -336,8 +336,8 @@
                     const img = new Image();
                     img.onload = function() {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 800;
-                        const MAX_HEIGHT = 800;
+                        const MAX_WIDTH = 600;
+                        const MAX_HEIGHT = 600;
                         let width = img.width;
                         let height = img.height;
 
@@ -358,7 +358,7 @@
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
                         
-                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
                         
                         const previewImg = document.getElementById(previewId);
                         previewImg.src = compressedDataUrl;
@@ -408,8 +408,8 @@
                 return;
             }
 
-            const sigProject = canvases.project.toDataURL();
-            const sigOwner = canvases.owner.toDataURL();
+            const sigProject = canvases.project.toDataURL('image/jpeg', 0.7);
+            const sigOwner = canvases.owner.toDataURL('image/jpeg', 0.7);
 
             const record = { id, owner, houseNo, date, items, sigProject, sigOwner };
 
@@ -427,7 +427,7 @@
                 resetForm();
                 switchTab(2);
             } catch (err) {
-                alert('หน่วยความจำเต็ม! กรุณาลดขนาดหรือจำนวนรูปภาพลง');
+                alert('หน่วยความจำเต็ม! แนะนำให้กดปุ่ม "ล้างข้อมูลทั้งหมด" ในหน้ารายการ หรือลดจำนวนรูปภาพลง');
             }
         }
 
@@ -444,6 +444,15 @@
 
         function loadRecords() {
             return JSON.parse(localStorage.getItem('damage_records') || '[]');
+        }
+
+        function clearAllData() {
+            if (confirm('คำเตือน: การล้างข้อมูลทั้งหมดจะลบรายการที่เคยบันทึกไว้ในเครื่องนี้ออกทั้งหมด คุณต้องการดำเนินการต่อหรือไม่?')) {
+                localStorage.removeItem('damage_records');
+                renderRecordsList();
+                updateDashboard();
+                alert('ล้างข้อมูลเรียบร้อยแล้ว');
+            }
         }
 
         function renderRecordsList() {
@@ -538,93 +547,4 @@
                 houseDamageMap[r.houseNo] = (houseDamageMap[r.houseNo] || 0) + r.items.length;
                 r.items.forEach(i => {
                     totalDamages++;
-                    if (statusCounts[i.status] !== undefined) statusCounts[i.status]++;
-                    if (i.status === 'เสร็จสิ้น') completedCount++;
-                });
-            });
-
-            const progress = totalDamages > 0 ? Math.round((completedCount / totalDamages) * 100) : 0;
-
-            document.getElementById('stat-total-houses').innerText = totalHouses;
-            document.getElementById('stat-total-damages').innerText = totalDamages;
-            document.getElementById('stat-completed').innerText = completedCount;
-            document.getElementById('stat-progress').innerText = progress + '%';
-
-            // Render Charts
-            if (charts.status) charts.status.destroy();
-            charts.status = new Chart(document.getElementById('statusChart').getContext('2d'), {
-                type: 'doughnut',
-                data: {
-                    labels: ['รอดำเนินการ', 'กำลังดำเนินการ', 'เสร็จสิ้น'],
-                    datasets: [{ data: [statusCounts['รอดำเนินการ'], statusCounts['กำลังดำเนินการ'], statusCounts['เสร็จสิ้น']], backgroundColor: ['#f59e0b', '#3b82f6', '#10b981'] }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-
-            if (charts.house) charts.house.destroy();
-            charts.house = new Chart(document.getElementById('houseChart').getContext('2d'), {
-                type: 'bar',
-                data: {
-                    labels: Object.keys(houseDamageMap),
-                    datasets: [{ label: 'จำนวนจุดเสียหาย', data: Object.values(houseDamageMap), backgroundColor: '#3b82f6' }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-            });
-        }
-
-        function exportPDF() {
-            const owner = document.getElementById('owner-name').value;
-            const houseNo = document.getElementById('house-no').value;
-            const date = document.getElementById('survey-date').value;
-
-            if (!owner || !houseNo) {
-                alert('กรุณากรอกชื่อเจ้าของบ้านและบ้านเลขที่ก่อนดาวน์โหลด PDF');
-                return;
-            }
-
-            document.getElementById('pdf-header-info').innerHTML = `
-                <p><b>ชื่อเจ้าของบ้าน:</b> ${owner}</p>
-                <p><b>บ้านเลขที่:</b> ${houseNo}</p>
-                <p><b>วันที่สำรวจ:</b> ${date}</p>
-            `;
-
-            const tbody = document.getElementById('pdf-table-body');
-            tbody.innerHTML = '';
-
-            document.querySelectorAll('.damage-item-card').forEach((card, idx) => {
-                const descBefore = card.querySelector('.item-desc-before').value;
-                const imgBefore = card.querySelector('.item-img-before-data').value;
-                const descAfter = card.querySelector('.item-desc-after').value;
-                const imgAfter = card.querySelector('.item-img-after-data').value;
-                const status = card.querySelector('.item-status').value;
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="border border-slate-300 p-2 text-center">${idx + 1}</td>
-                    <td class="border border-slate-300 p-2 text-center">${imgBefore ? `<img src="${imgBefore}" style="width:60px; height:60px; object-fit:cover; margin:auto;">` : '-'}</td>
-                    <td class="border border-slate-300 p-2">${descBefore}</td>
-                    <td class="border border-slate-300 p-2 text-center">${imgAfter ? `<img src="${imgAfter}" style="width:60px; height:60px; object-fit:cover; margin:auto;">` : '-'}</td>
-                    <td class="border border-slate-300 p-2">${descAfter}<br><span class="text-xs font-semibold text-blue-600">[สถานะ: ${status}]</span></td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            document.getElementById('pdf-sig-project').innerHTML = `<img src="${canvases.project.toDataURL()}" style="max-height: 50px; margin: auto;">`;
-            document.getElementById('pdf-sig-owner').innerHTML = `<img src="${canvases.owner.toDataURL()}" style="max-height: 50px; margin: auto;">`;
-
-            const element = document.getElementById('pdf-template');
-            element.classList.remove('hidden');
-
-            html2pdf().from(element).set({
-                margin: 10,
-                filename: `รายงานความเสียหาย_บ้านเลขที่_${houseNo}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            }).save().then(() => {
-                element.classList.add('hidden');
-            });
-        }
-    </script>
-</body>
-</html>
+                    if
