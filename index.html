@@ -3,959 +3,593 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบบันทึกความเสียหายบ้านข้างเคียง (Neighboring House Damage Tracking)</title>
+    <title>ระบบบันทึกและติดตามความเสียหายบ้านข้างเคียง</title>
     <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- html2pdf.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <!-- Google Fonts Prompt -->
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Prompt', 'sans-serif'],
-                    },
-                    colors: {
-                        brand: {
-                            50: '#f0f9ff',
-                            100: '#e0f2fe',
-                            500: '#0284c7',
-                            600: '#0284c7',
-                            700: '#0369a1',
-                            800: '#075985',
-                            900: '#0c4a6e',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        body {
-            font-family: 'Prompt', sans-serif;
-            background-color: #f8fafc;
-        }
-        
-        /* Custom Styles for PDF export */
-        .pdf-page {
-            width: 100%;
-            background: white;
-            color: #1e293b;
-            padding: 20px;
-            font-family: 'Prompt', sans-serif;
-        }
-
-        /* Printable Table styling */
-        .pdf-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-        .pdf-table th, .pdf-table td {
-            border: 1px solid #cbd5e1;
-            padding: 8px;
-            text-align: left;
-            font-size: 12px;
-            vertical-align: top;
-        }
-        .pdf-table th {
-            background-color: #f1f5f9;
-            font-weight: 600;
-        }
-
-        /* Hide Scrollbar for UI cleanliness */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Sarabun', sans-serif; }
+        canvas { touch-action: none; }
     </style>
 </head>
-<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+<body class="bg-slate-50 text-slate-800 pb-20 md:pb-0">
 
-    <!-- Header / Navigation Bar -->
-    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <!-- Brand Title -->
-                <div class="flex items-center space-x-3">
-                    <div class="bg-amber-500 p-2 rounded-lg text-slate-900 font-bold">
-                        <i class="fa-solid fa-house-chimney-crack text-xl"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-lg font-bold leading-tight">ระบบบันทึกความเสียหายบ้านข้างเคียง</h1>
-                        <p class="text-xs text-slate-400">Neighboring House Damage Inspection & Tracking System</p>
-                    </div>
-                </div>
-
-                <!-- Tab Navigation Buttons (Desktop) -->
-                <nav class="hidden md:flex space-x-2">
-                    <button onclick="switchTab('formTab')" id="nav-formTab" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 bg-amber-500 text-slate-900 font-semibold shadow">
-                        <i class="fa-solid fa-pen-to-square"></i> 1. บันทึกข้อมูล / ออก PDF
-                    </button>
-                    <button onclick="switchTab('listTab')" id="nav-listTab" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 hover:bg-slate-800 text-slate-300">
-                        <i class="fa-solid fa-list-check"></i> 2. รายการที่บันทึก
-                    </button>
-                    <button onclick="switchTab('dashboardTab')" id="nav-dashboardTab" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 hover:bg-slate-800 text-slate-300">
-                        <i class="fa-solid fa-chart-pie"></i> 3. แดชบอร์ดสรุปผล
-                    </button>
-                </nav>
+    <!-- Navbar / Header -->
+    <header class="bg-blue-700 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-house-chimney-crack text-2xl"></i>
+                <h1 class="text-lg md:text-xl font-bold">ระบบบันทึกความเสียหายบ้านข้างเคียง</h1>
             </div>
-        </div>
-
-        <!-- Mobile Navigation Tabs Bar -->
-        <div class="md:hidden flex border-t border-slate-800 bg-slate-900 text-xs">
-            <button onclick="switchTab('formTab')" id="mobile-nav-formTab" class="mobile-tab-btn flex-1 py-3 text-center text-amber-400 border-b-2 border-amber-400 font-semibold">
-                <i class="fa-solid fa-pen-to-square block mb-1 text-sm"></i> 1. กรอกฟอร์ม
-            </button>
-            <button onclick="switchTab('listTab')" id="mobile-nav-listTab" class="mobile-tab-btn flex-1 py-3 text-center text-slate-400">
-                <i class="fa-solid fa-list-check block mb-1 text-sm"></i> 2. รายการบันทึก
-            </button>
-            <button onclick="switchTab('dashboardTab')" id="mobile-nav-dashboardTab" class="mobile-tab-btn flex-1 py-3 text-center text-slate-400">
-                <i class="fa-solid fa-chart-pie block mb-1 text-sm"></i> 3. แดชบอร์ด
-            </button>
+            <!-- Desktop Navigation -->
+            <nav class="hidden md:flex space-x-2">
+                <button onclick="switchTab(1)" id="nav-btn-1" class="px-4 py-2 rounded-lg font-medium bg-blue-800 text-white transition"><i class="fa-solid fa-file-pen mr-2"></i>1. บันทึกข้อมูล</button>
+                <button onclick="switchTab(2)" id="nav-btn-2" class="px-4 py-2 rounded-lg font-medium hover:bg-blue-600 transition"><i class="fa-solid fa-list-check mr-2"></i>2. รายการ & แก้ไข</button>
+                <button onclick="switchTab(3)" id="nav-btn-3" class="px-4 py-2 rounded-lg font-medium hover:bg-blue-600 transition"><i class="fa-solid fa-chart-pie mr-2"></i>3. แดชบอร์ด</button>
+            </nav>
         </div>
     </header>
 
-    <!-- Notification Toast Container -->
-    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-3">
-        <i id="toast-icon" class="fa-solid fa-circle-check text-xl"></i>
-        <span id="toast-message" class="text-sm font-medium">บันทึกข้อมูลเรียบร้อยแล้ว</span>
-    </div>
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6">
 
-    <!-- Main Content Area -->
-    <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-
-        <!-- ========================================== -->
-        <!-- TAB 1: FORM ENTRY & PDF EXPORT -->
-        <!-- ========================================== -->
-        <section id="formTab" class="tab-content block space-y-6">
-            
-            <!-- Action Header Bar -->
-            <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-                        <i class="fa-solid fa-clipboard-list text-amber-500"></i> บันทึกฟอร์มความเสียหายบ้านข้างเคียง
-                    </h2>
-                    <p class="text-slate-500 text-sm mt-1">กรอกรายละเอียดความเสียหายบ้านข้างเคียง อัปโหลดรูปภาพ และดาวน์โหลดเอกสาร PDF</p>
+        <!-- ================= PAGE 1: FORM & PDF ================= -->
+        <section id="page-1" class="space-y-6">
+            <div class="bg-white rounded-xl shadow-sm p-5 md:p-8 border border-slate-100">
+                <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-100">
+                    <h2 class="text-xl font-bold text-blue-900"><i class="fa-solid fa-clipboard-list mr-2"></i>แบบฟอร์มสำรวจความเสียหายบ้านข้างเคียง</h2>
+                    <span id="form-mode-badge" class="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">สร้างรายการใหม่</span>
                 </div>
-                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                    <button type="button" onclick="resetForm()" class="px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-sm font-medium transition flex items-center justify-center gap-2 flex-1 md:flex-none">
-                        <i class="fa-solid fa-rotate-left"></i> ล้างฟอร์ม
-                    </button>
-                    <button type="button" onclick="generatePDF()" class="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition shadow-md flex items-center justify-center gap-2 flex-1 md:flex-none">
-                        <i class="fa-solid fa-file-pdf"></i> ดาวน์โหลด PDF
-                    </button>
-                    <button type="button" onclick="saveHouseRecord()" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold text-sm transition shadow-md flex items-center justify-center gap-2 flex-1 md:flex-none">
-                        <i class="fa-solid fa-floppy-disk"></i> บันทึกข้อมูล
-                    </button>
-                </div>
-            </div>
 
-            <!-- Main Form Card -->
-            <form id="inspectionForm" onsubmit="event.preventDefault(); saveHouseRecord();" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
-                
-                <input type="hidden" id="editingId" value="">
-
-                <!-- Section: House Details -->
-                <div class="border-b border-slate-200 pb-6">
-                    <h3 class="text-md font-bold text-slate-700 uppercase tracking-wider mb-4 flex items-center gap-2">
-                        <i class="fa-solid fa-house text-amber-500"></i> รายละเอียดบ้าน
-                    </h3>
+                <form id="damage-form" onsubmit="saveDamageRecord(event)" class="space-y-6">
+                    <input type="hidden" id="record-id">
+                    
+                    <!-- House Details -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">ชื่อเจ้าของบ้าน <span class="text-red-500">*</span></label>
-                            <input type="text" id="ownerName" required placeholder="นายสมชาย ใจดี" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition text-sm">
+                            <label class="block text-sm font-semibold mb-1">ชื่อเจ้าของบ้าน <span class="text-red-500">*</span></label>
+                            <input type="text" id="owner-name" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">บ้านเลขที่ <span class="text-red-500">*</span></label>
-                            <input type="text" id="houseNumber" required placeholder="99/123 หมู่ 4" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition text-sm">
+                            <label class="block text-sm font-semibold mb-1">บ้านเลขที่ <span class="text-red-500">*</span></label>
+                            <input type="text" id="house-no" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">วันที่สำรวจ <span class="text-red-500">*</span></label>
-                            <input type="date" id="surveyDate" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition text-sm">
+                            <label class="block text-sm font-semibold mb-1">วันที่สำรวจ <span class="text-red-500">*</span></label>
+                            <input type="date" id="survey-date" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
                         </div>
                     </div>
-                </div>
 
-                <!-- Section: Damage List Table -->
-                <div>
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-md font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
-                            <i class="fa-solid fa-triangle-exclamation text-amber-500"></i> รายละเอียดความเสียหาย
-                        </h3>
-                        <button type="button" onclick="addDamageRow()" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition flex items-center gap-1.5 shadow">
-                            <i class="fa-solid fa-plus"></i> เพิ่มแถวรายการ
+                    <!-- Items Table / Cards -->
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-bold text-slate-700">รายการจุดความเสียหาย</h3>
+                            <button type="button" onclick="addDamageItemRow()" class="px-3 py-1.5 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition">
+                                <i class="fa-solid fa-plus mr-1"></i> เพิ่มรายการความเสียหาย
+                            </button>
+                        </div>
+                        
+                        <div id="damage-items-container" class="space-y-4">
+                            <!-- Items will be injected here -->
+                        </div>
+                    </div>
+
+                    <!-- Signatures Section -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
+                        <div class="bg-slate-50 p-4 rounded-xl border">
+                            <label class="block text-sm font-semibold mb-2 text-center">ลงนาม: ตัวแทนโครงการ</label>
+                            <div class="border bg-white rounded-lg overflow-hidden relative" style="height: 150px;">
+                                <canvas id="sig-project" class="w-full h-full cursor-crosshair"></canvas>
+                            </div>
+                            <div class="flex justify-between mt-2">
+                                <span class="text-xs text-slate-500">ใช้นิ้วหรือเมาส์เซ็นในกรอบ</span>
+                                <button type="button" onclick="clearSig('project')" class="text-xs text-red-600 hover:underline"><i class="fa-solid fa-eraser mr-1"></i>ล้างลายเซ็น</button>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 p-4 rounded-xl border">
+                            <label class="block text-sm font-semibold mb-2 text-center">ลงนาม: เจ้าของบ้าน</label>
+                            <div class="border bg-white rounded-lg overflow-hidden relative" style="height: 150px;">
+                                <canvas id="sig-owner" class="w-full h-full cursor-crosshair"></canvas>
+                            </div>
+                            <div class="flex justify-between mt-2">
+                                <span class="text-xs text-slate-500">ใช้นิ้วหรือเมาส์เซ็นในกรอบ</span>
+                                <button type="button" onclick="clearSig('owner')" class="text-xs text-red-600 hover:underline"><i class="fa-solid fa-eraser mr-1"></i>ล้างลายเซ็น</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex flex-wrap gap-3 justify-end pt-4 border-t border-slate-100">
+                        <button type="button" onclick="resetForm()" class="px-5 py-2.5 bg-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-300 transition">
+                            <i class="fa-solid fa-rotate-left mr-2"></i>ล้างฟอร์มใหม่
+                        </button>
+                        <button type="submit" class="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 shadow-md transition">
+                            <i class="fa-solid fa-floppy-disk mr-2"></i>บันทึกข้อมูล
+                        </button>
+                        <button type="button" onclick="exportPDF()" class="px-6 py-2.5 bg-rose-600 text-white font-medium rounded-lg hover:bg-rose-700 shadow-md transition">
+                            <i class="fa-solid fa-file-pdf mr-2"></i>ดาวน์โหลด PDF
                         </button>
                     </div>
-
-                    <div class="overflow-x-auto rounded-xl border border-slate-200">
-                        <table class="w-full text-left border-collapse min-w-[800px]">
-                            <thead>
-                                <tr class="bg-slate-100 text-slate-700 text-xs font-semibold uppercase border-b border-slate-200">
-                                    <th class="p-3 text-center w-12">ที่</th>
-                                    <th class="p-3 w-48">รูปภาพก่อนแก้ไข</th>
-                                    <th class="p-3">รายละเอียดก่อนแก้ไข</th>
-                                    <th class="p-3 w-48">รูปภาพหลังแก้ไข</th>
-                                    <th class="p-3">รายละเอียดการแก้ไข</th>
-                                    <th class="p-3 w-36">สถานะการแก้ไข</th>
-                                    <th class="p-3 text-center w-12">ลบ</th>
-                                </tr>
-                            </thead>
-                            <tbody id="damageTableBody" class="divide-y divide-slate-200 text-sm">
-                                <!-- Dynamic Rows will be inserted here -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Section: Digital Signatures Pad -->
-                <div class="pt-4 border-t border-slate-200">
-                    <h3 class="text-md font-bold text-slate-700 uppercase tracking-wider mb-4 flex items-center gap-2">
-                        <i class="fa-solid fa-signature text-amber-500"></i> ลายเซ็นอิเล็กทรอนิกส์ (Digital Signatures)
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        
-                        <!-- Signature Pad 1: Representative -->
-                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col justify-between">
-                            <div>
-                                <div class="flex justify-between items-center mb-2">
-                                    <label class="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-                                        <i class="fa-solid fa-user-gear text-amber-600"></i> ลายเซ็นตัวแทนโครงการ
-                                    </label>
-                                    <button type="button" onclick="clearSignature('rep')" class="text-xs text-red-500 hover:text-red-700 font-medium flex items-center gap-1">
-                                        <i class="fa-solid fa-eraser"></i> ล้างลายเซ็น
-                                    </button>
-                                </div>
-                                <div class="relative w-full h-36 bg-white rounded-xl border border-slate-300 shadow-inner overflow-hidden cursor-crosshair">
-                                    <canvas id="repCanvas" class="w-full h-full touch-none"></canvas>
-                                </div>
-                            </div>
-                            <p class="text-[11px] text-slate-400 mt-2 text-center">ใช้นิ้ว ปากกา หรือเมาส์ วาดลายเซ็นในช่องด้านบน</p>
-                        </div>
-
-                        <!-- Signature Pad 2: Homeowner -->
-                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col justify-between">
-                            <div>
-                                <div class="flex justify-between items-center mb-2">
-                                    <label class="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-                                        <i class="fa-solid fa-user-check text-amber-600"></i> ลายเซ็นเจ้าของบ้าน
-                                    </label>
-                                    <button type="button" onclick="clearSignature('owner')" class="text-xs text-red-500 hover:text-red-700 font-medium flex items-center gap-1">
-                                        <i class="fa-solid fa-eraser"></i> ล้างลายเซ็น
-                                    </button>
-                                </div>
-                                <div class="relative w-full h-36 bg-white rounded-xl border border-slate-300 shadow-inner overflow-hidden cursor-crosshair">
-                                    <canvas id="ownerCanvas" class="w-full h-full touch-none"></canvas>
-                                </div>
-                            </div>
-                            <p class="text-[11px] text-slate-400 mt-2 text-center">ใช้นิ้ว ปากกา หรือเมาส์ วาดลายเซ็นในช่องด้านบน</p>
-                        </div>
-
-                    </div>
-                </div>
-            </form>
+                </form>
+            </div>
         </section>
 
-        <!-- ========================================== -->
-        <!-- TAB 2: INSPECTION LIST & EDIT -->
-        <!-- ========================================== -->
-        <section id="listTab" class="tab-content hidden space-y-6">
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-                            <i class="fa-solid fa-list-check text-sky-600"></i> รายการที่ทำการบันทึกแล้วทั้งหมด
-                        </h2>
-                        <p class="text-slate-500 text-sm mt-1">ค้นหา ตรวจสอบ และอัปเดตสถานะความคืบหน้าการแก้ไข</p>
-                    </div>
-
-                    <!-- Search and Filter Tools -->
-                    <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                        <div class="relative flex-1 sm:w-64">
-                            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400"></i>
-                            <input type="text" id="searchInput" oninput="renderHouseList()" placeholder="ค้นหาชื่อเจ้าของ / บ้านเลขที่..." class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none text-sm">
-                        </div>
-                        <select id="statusFilter" onchange="renderHouseList()" class="px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none text-sm bg-white">
-                            <option value="ALL">สถานะทั้งหมด</option>
-                            <option value="PENDING">ยังไม่แก้ไข / ดำเนินการอยู่</option>
-                            <option value="COMPLETED">แก้ไขเรียบร้อยแล้ว</option>
-                        </select>
+        <!-- ================= PAGE 2: RECORDS & EDIT ================= -->
+        <section id="page-2" class="hidden space-y-6">
+            <div class="bg-white rounded-xl shadow-sm p-5 md:p-8 border border-slate-100">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 pb-4 border-b gap-4">
+                    <h2 class="text-xl font-bold text-blue-900"><i class="fa-solid fa-list-check mr-2"></i>รายการบันทึกความเสียหายทั้งหมด</h2>
+                    <div class="w-full md:w-72">
+                        <input type="text" id="search-box" onkeyup="renderRecordsList()" placeholder="ค้นหาตามชื่อ หรือ บ้านเลขที่..." class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                 </div>
 
-                <!-- House Cards List Grid -->
-                <div id="houseListContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
-                    <!-- Dynamic Cards Rendered via JS -->
+                <div id="records-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Cards injected here -->
                 </div>
             </div>
         </section>
 
-        <!-- ========================================== -->
-        <!-- TAB 3: DASHBOARD & PROGRESS ANALYTICS -->
-        <!-- ========================================== -->
-        <section id="dashboardTab" class="tab-content hidden space-y-6">
-            
-            <!-- Summary Stats Cards -->
+        <!-- ================= PAGE 3: DASHBOARD ================= -->
+        <section id="page-3" class="hidden space-y-6">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">บ้านที่ได้รับการสำรวจ</p>
-                        <p id="statTotalHouses" class="text-3xl font-extrabold text-slate-800 mt-1">0</p>
+                        <p class="text-sm text-slate-500 font-medium">บ้านที่สำรวจทั้งหมด</p>
+                        <h3 id="stat-total-houses" class="text-2xl font-bold text-blue-600 mt-1">0</h3>
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center text-xl">
-                        <i class="fa-solid fa-house"></i>
-                    </div>
+                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl"><i class="fa-solid fa-house"></i></div>
                 </div>
-
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">รายการความเสียหายทั้งหมด</p>
-                        <p id="statTotalItems" class="text-3xl font-extrabold text-slate-800 mt-1">0</p>
+                        <p class="text-sm text-slate-500 font-medium">จุดเสียหายทั้งหมด</p>
+                        <h3 id="stat-total-damages" class="text-2xl font-bold text-amber-600 mt-1">0</h3>
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                    </div>
+                    <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-xl"><i class="fa-solid fa-triangle-exclamation"></i></div>
                 </div>
-
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">แก้ไขเรียบร้อยแล้ว</p>
-                        <p id="statCompletedItems" class="text-3xl font-extrabold text-emerald-600 mt-1">0</p>
+                        <p class="text-sm text-slate-500 font-medium">แก้ไขเสร็จสิ้น</p>
+                        <h3 id="stat-completed" class="text-2xl font-bold text-emerald-600 mt-1">0</h3>
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl">
-                        <i class="fa-solid fa-circle-check"></i>
-                    </div>
+                    <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-xl"><i class="fa-solid fa-circle-check"></i></div>
                 </div>
-
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">ความคืบหน้ารวมงานซ่อม</p>
-                        <p id="statProgressPercent" class="text-3xl font-extrabold text-blue-600 mt-1">0%</p>
+                        <p class="text-sm text-slate-500 font-medium">% ความคืบหน้ารวม</p>
+                        <h3 id="stat-progress" class="text-2xl font-bold text-indigo-600 mt-1">0%</h3>
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-xl">
-                        <i class="fa-solid fa-chart-line"></i>
-                    </div>
+                    <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-xl"><i class="fa-solid fa-chart-line"></i></div>
                 </div>
             </div>
 
-            <!-- Charts Grid -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Chart 1: Status Distribution -->
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                    <h3 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
-                        <i class="fa-solid fa-chart-pie text-sky-600"></i> สัดส่วนสถานะการแก้ไขความเสียหาย
-                    </h3>
-                    <div class="relative h-64 flex justify-center items-center">
-                        <canvas id="statusDoughnutChart"></canvas>
-                    </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-slate-700 mb-4">สัดส่วนสถานะการซ่อมแซม</h3>
+                    <div class="relative" style="height: 280px;"><canvas id="statusChart"></canvas></div>
                 </div>
-
-                <!-- Chart 2: Damage Count per House -->
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                    <h3 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
-                        <i class="fa-solid fa-chart-column text-sky-600"></i> จำนวนรายการความเสียหายแยกตามบ้านเลขที่
-                    </h3>
-                    <div class="relative h-64">
-                        <canvas id="houseBarChart"></canvas>
-                    </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-slate-700 mb-4">จำนวนจุดเสียหายแยกตามบ้านเลขที่</h3>
+                    <div class="relative" style="height: 280px;"><canvas id="houseChart"></canvas></div>
                 </div>
             </div>
         </section>
 
     </main>
 
-    <!-- HIDDEN PDF TEMPLATE FOR GENERATION -->
-    <div class="hidden">
-        <div id="pdfPrintArea" class="pdf-page">
-            <div style="text-align: center; border-bottom: 2px solid #0284c7; padding-bottom: 10px; margin-bottom: 15px;">
-                <h2 style="font-size: 18px; font-weight: bold; margin: 0; color: #0f172a;">รายงานความเสียหายบ้านข้างเคียง</h2>
-                <p style="font-size: 12px; color: #64748b; margin: 4px 0 0 0;">เอกสารบันทึกรายละเอียดก่อนและหลังการแก้ไขความเสียหาย</p>
-            </div>
+    <!-- Bottom Navigation Bar for Mobile -->
+    <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around py-3 shadow-lg z-50">
+        <button onclick="switchTab(1)" id="mob-btn-1" class="flex flex-col items-center text-blue-600 font-semibold text-xs">
+            <i class="fa-solid fa-file-pen text-lg mb-1"></i>บันทึก
+        </button>
+        <button onclick="switchTab(2)" id="mob-btn-2" class="flex flex-col items-center text-slate-400 font-semibold text-xs">
+            <i class="fa-solid fa-list-check text-lg mb-1"></i>รายการ
+        </button>
+        <button onclick="switchTab(3)" id="mob-btn-3" class="flex flex-col items-center text-slate-400 font-semibold text-xs">
+            <i class="fa-solid fa-chart-pie text-lg mb-1"></i>แดชบอร์ด
+        </button>
+    </div>
 
-            <!-- Details Section -->
-            <table style="width: 100%; font-size: 13px; margin-bottom: 15px;">
-                <tr>
-                    <td style="padding: 4px 0;"><strong>ชื่อเจ้าของบ้าน:</strong> <span id="pdfOwnerName">-</span></td>
-                    <td style="padding: 4px 0;"><strong>บ้านเลขที่:</strong> <span id="pdfHouseNumber">-</span></td>
-                    <td style="padding: 4px 0;"><strong>วันที่สำรวจ:</strong> <span id="pdfSurveyDate">-</span></td>
+    <!-- Hidden PDF Template -->
+    <div id="pdf-template" class="hidden bg-white p-6 text-slate-800" style="width: 210mm;">
+        <h1 class="text-xl font-bold text-center mb-2">รายงานความเสียหายบ้านข้างเคียง</h1>
+        <div id="pdf-header-info" class="mb-4 text-sm grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded"></div>
+        <table class="w-full border-collapse border border-slate-300 text-xs mb-6">
+            <thead>
+                <tr class="bg-slate-100">
+                    <th class="border border-slate-300 p-2 w-10">ที่</th>
+                    <th class="border border-slate-300 p-2">รูปก่อนแก้ไข</th>
+                    <th class="border border-slate-300 p-2">รายละเอียดก่อนแก้ไข</th>
+                    <th class="border border-slate-300 p-2">รูปหลังแก้ไข</th>
+                    <th class="border border-slate-300 p-2">รายละเอียดการแก้ไข / สถานะ</th>
                 </tr>
-            </table>
-
-            <!-- Damage Table -->
-            <p style="font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #334155;">รายละเอียดความเสียหาย</p>
-            <table class="pdf-table">
-                <thead>
-                    <tr>
-                        <th style="width: 5%; text-align: center;">ที่</th>
-                        <th style="width: 20%; text-align: center;">รูปภาพก่อนแก้ไข</th>
-                        <th style="width: 25%;">รายละเอียดก่อนแก้ไข</th>
-                        <th style="width: 20%; text-align: center;">รูปภาพหลังแก้ไข</th>
-                        <th style="width: 25%;">รายละเอียดการแก้ไข</th>
-                        <th style="width: 5%; text-align: center;">สถานะ</th>
-                    </tr>
-                </thead>
-                <tbody id="pdfTableBody">
-                    <!-- PDF Dynamic Rows -->
-                </tbody>
-            </table>
-
-            <!-- Signatures Section -->
-            <div style="margin-top: 40px; width: 100%; display: flex; justify-content: space-between;">
-                <div style="width: 45%; text-align: center; font-size: 12px;">
-                    <div style="height: 60px; display: flex; align-items: flex-end; justify-content: center; margin-bottom: 5px;">
-                        <img id="pdfRepSignatureImg" style="max-height: 55px; max-width: 180px; display: none;">
-                        <div id="pdfRepSignatureBlank" style="border-bottom: 1px dotted #64748b; width: 180px; height: 1px;"></div>
-                    </div>
-                    <p style="margin: 0;">ลงนาม ................................................. ตัวแทนโครงการ</p>
-                    <p style="margin: 4px 0 0 0;">( ................................................. )</p>
-                    <p style="color: #64748b; font-size: 11px; margin-top: 2px;">วันที่ ........ / ........ / .............</p>
-                </div>
-                <div style="width: 45%; text-align: center; font-size: 12px;">
-                    <div style="height: 60px; display: flex; align-items: flex-end; justify-content: center; margin-bottom: 5px;">
-                        <img id="pdfOwnerSignatureImg" style="max-height: 55px; max-width: 180px; display: none;">
-                        <div id="pdfOwnerSignatureBlank" style="border-bottom: 1px dotted #64748b; width: 180px; height: 1px;"></div>
-                    </div>
-                    <p style="margin: 0;">ลงนาม ................................................. เจ้าของบ้าน</p>
-                    <p style="margin: 4px 0 0 0;">( <span id="pdfSignOwnerName">.................................................</span> )</p>
-                    <p style="color: #64748b; font-size: 11px; margin-top: 2px;">วันที่ ........ / ........ / .............</p>
-                </div>
+            </thead>
+            <tbody id="pdf-table-body"></tbody>
+        </table>
+        <div class="flex justify-between mt-8 text-sm">
+            <div class="text-center">
+                <div id="pdf-sig-project" class="h-16 mb-1 flex items-center justify-center"></div>
+                <p>.................................................</p>
+                <p class="font-semibold">ตัวแทนโครงการ</p>
+            </div>
+            <div class="text-center">
+                <div id="pdf-sig-owner" class="h-16 mb-1 flex items-center justify-center"></div>
+                <p>.................................................</p>
+                <p class="font-semibold">เจ้าของบ้าน</p>
             </div>
         </div>
     </div>
 
-    <!-- APPLICATION JAVASCRIPT LOGIC -->
+    <!-- Script Application Logic -->
     <script>
-        // Data State Store
-        let houseRecords = [];
-        let statusChartInstance = null;
-        let houseChartInstance = null;
+        let canvases = { project: null, owner: null };
+        let contexts = { project: null, owner: null };
+        let isDrawing = { project: false, owner: false };
+        let charts = { status: null, house: null };
 
-        // Canvas Signature Pad State
-        let repCanvas, ownerCanvas, repCtx, ownerCtx;
-        let isDrawingRep = false, isDrawingOwner = false;
-        let hasRepSig = false, hasOwnerSig = false;
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('survey-date').valueAsDate = new Date();
+            initSignatures();
+            addDamageItemRow();
+            loadRecords();
+            updateDashboard();
+        });
 
-        // Initialize App on Page Load
-        window.onload = function() {
-            loadRecordsFromStorage();
-            
-            // Set default date to today
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('surveyDate').value = today;
-
-            // Initialize Signature Canvas Pads
-            initSignaturePads();
-
-            // Seed mock data if completely empty
-            if (houseRecords.length === 0) {
-                seedMockData();
-            }
-
-            // Initial row for form
-            addDamageRow();
-        };
-
-        // Initialize Signature Canvases
-        function initSignaturePads() {
-            repCanvas = document.getElementById('repCanvas');
-            ownerCanvas = document.getElementById('ownerCanvas');
-            repCtx = repCanvas.getContext('2d');
-            ownerCtx = ownerCanvas.getContext('2d');
-
-            resizeCanvas(repCanvas);
-            resizeCanvas(ownerCanvas);
-
-            window.addEventListener('resize', () => {
-                resizeCanvas(repCanvas);
-                resizeCanvas(ownerCanvas);
-            });
-
-            setupCanvasListeners(repCanvas, repCtx, 'rep');
-            setupCanvasListeners(ownerCanvas, ownerCtx, 'owner');
-        }
-
-        function resizeCanvas(canvas) {
-            const rect = canvas.parentElement.getBoundingClientRect();
-            if (rect.width > 0) {
-                // Preserve content if needed or set display size
-                canvas.width = rect.width;
-                canvas.height = rect.height;
-            }
-        }
-
-        function setupCanvasListeners(canvas, ctx, type) {
-            ctx.lineWidth = 2.5;
-            ctx.lineCap = 'round';
-            ctx.strokeStyle = '#0f172a';
-
-            let isDrawing = false;
-
-            const getPos = (e) => {
-                const rect = canvas.getBoundingClientRect();
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-                return {
-                    x: clientX - rect.left,
-                    y: clientY - rect.top
-                };
-            };
-
-            const startDraw = (e) => {
-                e.preventDefault();
-                isDrawing = true;
-                const pos = getPos(e);
-                ctx.beginPath();
-                ctx.moveTo(pos.x, pos.y);
-                if (type === 'rep') hasRepSig = true;
-                if (type === 'owner') hasOwnerSig = true;
-            };
-
-            const draw = (e) => {
-                if (!isDrawing) return;
-                e.preventDefault();
-                const pos = getPos(e);
-                ctx.lineTo(pos.x, pos.y);
-                ctx.stroke();
-            };
-
-            const stopDraw = (e) => {
-                if (isDrawing) {
-                    ctx.closePath();
-                    isDrawing = false;
+        function initSignatures() {
+            ['project', 'owner'].forEach(type => {
+                const canvas = document.getElementById(`sig-${type}`);
+                canvases[type] = canvas;
+                contexts[type] = canvas.getContext('2d');
+                
+                function resizeCanvas() {
+                    const rect = canvas.parentElement.getBoundingClientRect();
+                    canvas.width = rect.width;
+                    canvas.height = rect.height;
                 }
-            };
+                resizeCanvas();
+                window.addEventListener('resize', resizeCanvas);
 
-            // Mouse Events
-            canvas.addEventListener('mousedown', startDraw);
-            canvas.addEventListener('mousemove', draw);
-            canvas.addEventListener('mouseup', stopDraw);
-            canvas.addEventListener('mouseleave', stopDraw);
+                canvas.addEventListener('mousedown', startDraw);
+                canvas.addEventListener('mousemove', draw);
+                canvas.addEventListener('mouseup', stopDraw);
+                canvas.addEventListener('mouseleave', stopDraw);
 
-            // Touch Events
-            canvas.addEventListener('touchstart', startDraw);
-            canvas.addEventListener('touchmove', draw);
-            canvas.addEventListener('touchend', stopDraw);
-        }
+                canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDraw(e.touches[0]); });
+                canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e.touches[0]); });
+                canvas.addEventListener('touchend', stopDraw);
 
-        function clearSignature(type) {
-            if (type === 'rep') {
-                repCtx.clearRect(0, 0, repCanvas.width, repCanvas.height);
-                hasRepSig = false;
-            } else if (type === 'owner') {
-                ownerCtx.clearRect(0, 0, ownerCanvas.width, ownerCanvas.height);
-                hasOwnerSig = false;
-            }
-        }
-
-        function loadSignatureToCanvas(canvas, ctx, dataUrl) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (!dataUrl) return;
-            const img = new Image();
-            img.onload = function() {
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            };
-            img.src = dataUrl;
-        }
-
-        // Load / Save LocalStorage
-        function loadRecordsFromStorage() {
-            const data = localStorage.getItem('neighbor_house_damage_records');
-            if (data) {
-                try {
-                    houseRecords = JSON.parse(data);
-                } catch (e) {
-                    houseRecords = [];
+                function startDraw(e) {
+                    isDrawing[type] = true;
+                    const rect = canvas.getBoundingClientRect();
+                    contexts[type].beginPath();
+                    contexts[type].moveTo(e.clientX - rect.left, e.clientY - rect.top);
                 }
-            }
-        }
-
-        function saveRecordsToStorage() {
-            localStorage.setItem('neighbor_house_damage_records', JSON.stringify(houseRecords));
-        }
-
-        // Tab Navigation Switcher
-        function switchTab(tabId) {
-            // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.getElementById(tabId).classList.remove('hidden');
-
-            // Desktop Buttons Styling
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.className = "tab-btn px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 hover:bg-slate-800 text-slate-300";
+                function draw(e) {
+                    if (!isDrawing[type]) return;
+                    const rect = canvas.getBoundingClientRect();
+                    contexts[type].lineTo(e.clientX - rect.left, e.clientY - rect.top);
+                    contexts[type].stroke();
+                }
+                function stopDraw() { isDrawing[type] = false; }
             });
-            const activeDesktopNav = document.getElementById('nav-' + tabId);
-            if (activeDesktopNav) {
-                activeDesktopNav.className = "tab-btn px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 bg-amber-500 text-slate-900 shadow";
-            }
-
-            // Mobile Buttons Styling
-            document.querySelectorAll('.mobile-tab-btn').forEach(btn => {
-                btn.className = "mobile-tab-btn flex-1 py-3 text-center text-slate-400";
-            });
-            const activeMobileNav = document.getElementById('mobile-nav-' + tabId);
-            if (activeMobileNav) {
-                activeMobileNav.className = "mobile-tab-btn flex-1 py-3 text-center text-amber-400 border-b-2 border-amber-400 font-semibold";
-            }
-
-            // Tab-specific actions
-            if (tabId === 'listTab') {
-                renderHouseList();
-            } else if (tabId === 'dashboardTab') {
-                renderDashboard();
-            }
         }
 
-        // Add Damage Row to Form Table
-        function addDamageRow(data = null) {
-            const tbody = document.getElementById('damageTableBody');
-            const rowCount = tbody.children.length + 1;
+        function clearSig(type) {
+            contexts[type].clearRect(0, 0, canvases[type].width, canvases[type].height);
+        }
 
-            const tr = document.createElement('tr');
-            tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
-            
-            tr.innerHTML = `
-                <td class="p-3 text-center font-bold text-slate-500 row-number">${rowCount}</td>
-                <td class="p-3">
-                    <div class="flex flex-col gap-2">
-                        <input type="file" accept="image/*" onchange="handleImageUpload(this, 'before')" class="text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200">
-                        <div class="before-preview relative w-full h-24 bg-slate-100 rounded-lg border border-dashed border-slate-300 flex items-center justify-center overflow-hidden">
-                            ${data && data.beforeImg ? `<img src="${data.beforeImg}" class="w-full h-full object-cover">` : `<span class="text-xs text-slate-400">ไม่มีรูปภาพ</span>`}
-                        </div>
+        function addDamageItemRow(itemData = {}) {
+            const container = document.getElementById('damage-items-container');
+            const index = container.children.length + 1;
+            const div = document.createElement('div');
+            div.className = 'damage-item-card p-4 bg-slate-50 border rounded-xl grid grid-cols-1 md:grid-cols-12 gap-3 items-center';
+            div.innerHTML = `
+                <div class="md:col-span-1 text-center font-bold text-blue-700 item-index">#${index}</div>
+                <div class="md:col-span-4 space-y-2">
+                    <input type="text" placeholder="รายละเอียดความเสียหายก่อนแก้ไข" class="w-full px-3 py-2 border rounded text-sm bg-white item-desc-before" value="${itemData.descBefore || ''}">
+                    <div class="flex items-center space-x-2">
+                        <input type="file" accept="image/*" class="text-xs item-img-before-file" onchange="previewImage(this, 'img-prev-before-${index}')">
+                        <input type="hidden" class="item-img-before-data" value="${itemData.imgBefore || ''}">
+                        <img id="img-prev-before-${index}" src="${itemData.imgBefore || ''}" class="w-10 h-10 object-cover rounded border ${itemData.imgBefore ? '' : 'hidden'}">
                     </div>
-                </td>
-                <td class="p-3">
-                    <textarea rows="3" placeholder="ระบุรายละเอียด เช่น รอยแตกร้าวผนังซุ้มประตู..." class="before-desc w-full p-2.5 rounded-lg border border-slate-300 focus:ring-1 focus:ring-amber-500 outline-none text-xs leading-relaxed">${data ? data.beforeDesc : ''}</textarea>
-                </td>
-                <td class="p-3">
-                    <div class="flex flex-col gap-2">
-                        <input type="file" accept="image/*" onchange="handleImageUpload(this, 'after')" class="text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200">
-                        <div class="after-preview relative w-full h-24 bg-slate-100 rounded-lg border border-dashed border-slate-300 flex items-center justify-center overflow-hidden">
-                            ${data && data.afterImg ? `<img src="${data.afterImg}" class="w-full h-full object-cover">` : `<span class="text-xs text-slate-400">ไม่มีรูปภาพ</span>`}
-                        </div>
+                </div>
+                <div class="md:col-span-4 space-y-2">
+                    <input type="text" placeholder="รายละเอียดการแก้ไข" class="w-full px-3 py-2 border rounded text-sm bg-white item-desc-after" value="${itemData.descAfter || ''}">
+                    <div class="flex items-center space-x-2">
+                        <input type="file" accept="image/*" class="text-xs item-img-after-file" onchange="previewImage(this, 'img-prev-after-${index}')">
+                        <input type="hidden" class="item-img-after-data" value="${itemData.imgAfter || ''}">
+                        <img id="img-prev-after-${index}" src="${itemData.imgAfter || ''}" class="w-10 h-10 object-cover rounded border ${itemData.imgAfter ? '' : 'hidden'}">
                     </div>
-                </td>
-                <td class="p-3">
-                    <textarea rows="3" placeholder="ระบุรายละเอียดการซ่อม เช่น ฉาบเก็บรอยแตกร้าวพร้อมทาสี..." class="after-desc w-full p-2.5 rounded-lg border border-slate-300 focus:ring-1 focus:ring-amber-500 outline-none text-xs leading-relaxed">${data ? data.afterDesc : ''}</textarea>
-                </td>
-                <td class="p-3">
-                    <select class="item-status w-full p-2 rounded-lg border border-slate-300 focus:ring-1 focus:ring-amber-500 text-xs bg-white font-medium">
-                        <option value="ยังไม่แก้ไข" ${data && data.status === 'ยังไม่แก้ไข' ? 'selected' : ''}>ยังไม่แก้ไข</option>
-                        <option value="กำลังดำเนินการ" ${data && data.status === 'กำลังดำเนินการ' ? 'selected' : ''}>กำลังดำเนินการ</option>
-                        <option value="แก้ไขเรียบร้อยแล้ว" ${data && data.status === 'แก้ไขเรียบร้อยแล้ว' ? 'selected' : ''}>แก้ไขเรียบร้อยแล้ว</option>
+                </div>
+                <div class="md:col-span-2">
+                    <select class="w-full px-2 py-2 border rounded text-sm bg-white item-status">
+                        <option value="รอดำเนินการ" ${itemData.status === 'รอดำเนินการ' ? 'selected' : ''}>รอดำเนินการ</option>
+                        <option value="กำลังดำเนินการ" ${itemData.status === 'กำลังดำเนินการ' ? 'selected' : ''}>กำลังดำเนินการ</option>
+                        <option value="เสร็จสิ้น" ${itemData.status === 'เสร็จสิ้น' ? 'selected' : ''}>เสร็จสิ้น</option>
                     </select>
-                </td>
-                <td class="p-3 text-center">
-                    <button type="button" onclick="removeDamageRow(this)" class="text-slate-400 hover:text-red-500 p-2 rounded-lg hover:bg-red-50 transition">
-                        <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                </td>
+                </div>
+                <div class="md:col-span-1 text-center">
+                    <button type="button" onclick="this.closest('.damage-item-card').remove(); updateIndices();" class="text-red-500 hover:text-red-700 p-2"><i class="fa-solid fa-trash"></i></button>
+                </div>
             `;
-
-            tbody.appendChild(tr);
-            updateRowNumbers();
+            container.appendChild(div);
         }
 
-        // Handle Image File Upload to Base64
-        function handleImageUpload(input, type) {
-            const file = input.files[0];
-            if (file) {
+        function updateIndices() {
+            document.querySelectorAll('.damage-item-card').forEach((card, idx) => {
+                card.querySelector('.item-index').innerText = `#${idx + 1}`;
+            });
+        }
+
+        function previewImage(input, previewId) {
+            if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const previewContainer = input.closest('td').querySelector(`.${type}-preview`);
-                    previewContainer.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover">`;
-                };
-                reader.readAsDataURL(file);
+                    const img = document.getElementById(previewId);
+                    img.src = e.target.result;
+                    img.classList.remove('hidden');
+                    input.nextElementSibling.value = e.target.result;
+                }
+                reader.readAsDataURL(input.files[0]);
             }
         }
 
-        // Remove Row and Update Indexes
-        function removeDamageRow(btn) {
-            const tbody = document.getElementById('damageTableBody');
-            if (tbody.children.length > 1) {
-                btn.closest('tr').remove();
-                updateRowNumbers();
-            } else {
-                showToast("ต้องมีอย่างน้อย 1 รายการความเสียหาย", "error");
-            }
-        }
-
-        function updateRowNumbers() {
-            const rows = document.querySelectorAll('#damageTableBody tr');
-            rows.forEach((row, index) => {
-                row.querySelector('.row-number').textContent = index + 1;
+        function switchTab(tabNo) {
+            [1, 2, 3].forEach(i => {
+                document.getElementById(`page-${i}`).classList.add('hidden');
+                document.getElementById(`nav-btn-${i}`).className = "px-4 py-2 rounded-lg font-medium hover:bg-blue-600 transition";
+                document.getElementById(`mob-btn-${i}`).className = "flex flex-col items-center text-slate-400 font-semibold text-xs";
             });
+            document.getElementById(`page-${tabNo}`).classList.remove('hidden');
+            document.getElementById(`nav-btn-${tabNo}`).className = "px-4 py-2 rounded-lg font-medium bg-blue-800 text-white transition";
+            document.getElementById(`mob-btn-${tabNo}`).className = "flex flex-col items-center text-blue-600 font-semibold text-xs";
+            
+            if (tabNo === 2) renderRecordsList();
+            if (tabNo === 3) updateDashboard();
         }
 
-        // Save Record Function
-        function saveHouseRecord() {
-            const editingId = document.getElementById('editingId').value;
-            const ownerName = document.getElementById('ownerName').value.trim();
-            const houseNumber = document.getElementById('houseNumber').value.trim();
-            const surveyDate = document.getElementById('surveyDate').value;
+        function saveDamageRecord(e) {
+            e.preventDefault();
+            const id = document.getElementById('record-id').value || 'REC-' + Date.now();
+            const owner = document.getElementById('owner-name').value;
+            const houseNo = document.getElementById('house-no').value;
+            const date = document.getElementById('survey-date').value;
 
-            if (!ownerName || !houseNumber || !surveyDate) {
-                showToast("กรุณากรอกข้อมูลบ้านให้ครบถ้วน", "error");
-                return;
-            }
-
-            // Collect Damage Items
-            const damageItems = [];
-            const rows = document.querySelectorAll('#damageTableBody tr');
-            
-            rows.forEach((row) => {
-                const beforeImgEl = row.querySelector('.before-preview img');
-                const afterImgEl = row.querySelector('.after-preview img');
-
-                damageItems.push({
-                    beforeImg: beforeImgEl ? beforeImgEl.src : '',
-                    beforeDesc: row.querySelector('.before-desc').value.trim(),
-                    afterImg: afterImgEl ? afterImgEl.src : '',
-                    afterDesc: row.querySelector('.after-desc').value.trim(),
-                    status: row.querySelector('.item-status').value
+            const items = [];
+            document.querySelectorAll('.damage-item-card').forEach(card => {
+                items.push({
+                    descBefore: card.querySelector('.item-desc-before').value,
+                    imgBefore: card.querySelector('.item-img-before-data').value,
+                    descAfter: card.querySelector('.item-desc-after').value,
+                    imgAfter: card.querySelector('.item-img-after-data').value,
+                    status: card.querySelector('.item-status').value
                 });
             });
 
-            // Calculate Overall House Status Automatically
-            const allCompleted = damageItems.every(item => item.status === 'แก้ไขเรียบร้อยแล้ว');
-            const overallStatus = allCompleted ? 'แก้ไขเรียบร้อยแล้ว' : 'กำลังดำเนินการ';
-
-            // Extract Signatures as Base64 Images
-            const repSignature = hasRepSig ? repCanvas.toDataURL() : '';
-            const ownerSignature = hasOwnerSig ? ownerCanvas.toDataURL() : '';
-
-            const recordData = {
-                id: editingId ? editingId : Date.now().toString(),
-                ownerName,
-                houseNumber,
-                surveyDate,
-                items: damageItems,
-                repSignature,
-                ownerSignature,
-                overallStatus,
-                updatedAt: new Date().toISOString()
-            };
-
-            if (editingId) {
-                const idx = houseRecords.findIndex(r => r.id === editingId);
-                if (idx !== -1) houseRecords[idx] = recordData;
-            } else {
-                houseRecords.push(recordData);
+            if (items.length === 0) {
+                alert('กรุณาเพิ่มรายการจุดความเสียหายอย่างน้อย 1 รายการ');
+                return;
             }
 
-            saveRecordsToStorage();
-            showToast(editingId ? "อัปเดตข้อมูลสำเร็จ" : "บันทึกข้อมูลสำเร็จ");
+            const sigProject = canvases.project.toDataURL();
+            const sigOwner = canvases.owner.toDataURL();
+
+            const record = { id, owner, houseNo, date, items, sigProject, sigOwner };
+
+            let records = JSON.parse(localStorage.getItem('damage_records') || '[]');
+            const existingIdx = records.findIndex(r => r.id === id);
+            if (existingIdx >= 0) {
+                records[existingIdx] = record;
+            } else {
+                records.push(record);
+            }
+
+            localStorage.setItem('damage_records', JSON.stringify(records));
+            alert('บันทึกข้อมูลสำเร็จเรียบร้อยแล้ว!');
             resetForm();
-            switchTab('listTab');
+            switchTab(2);
         }
 
-        // Reset Form Controls
         function resetForm() {
-            document.getElementById('editingId').value = '';
-            document.getElementById('inspectionForm').reset();
-            document.getElementById('damageTableBody').innerHTML = '';
-            
-            clearSignature('rep');
-            clearSignature('owner');
-
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('surveyDate').value = today;
-            
-            addDamageRow();
+            document.getElementById('damage-form').reset();
+            document.getElementById('record-id').value = '';
+            document.getElementById('survey-date').valueAsDate = new Date();
+            document.getElementById('damage-items-container').innerHTML = '';
+            clearSig('project');
+            clearSig('owner');
+            document.getElementById('form-mode-badge').innerText = "สร้างรายการใหม่";
+            addDamageItemRow();
         }
 
-        // Edit Existing Record
+        function loadRecords() {
+            return JSON.parse(localStorage.getItem('damage_records') || '[]');
+        }
+
+        function renderRecordsList() {
+            const container = document.getElementById('records-container');
+            const keyword = document.getElementById('search-box').value.toLowerCase();
+            const records = loadRecords();
+            container.innerHTML = '';
+
+            const filtered = records.filter(r => r.owner.toLowerCase().includes(keyword) || r.houseNo.toLowerCase().includes(keyword));
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-10 text-slate-400">ไม่พบรายการข้อมูลความเสียหาย</div>`;
+                return;
+            }
+
+            filtered.forEach(r => {
+                const total = r.items.length;
+                const completed = r.items.filter(i => i.status === 'เสร็จสิ้น').length;
+                const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+                const card = document.createElement('div');
+                card.className = 'bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3 flex flex-col justify-between';
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <h3 class="font-bold text-slate-800 text-lg">${r.owner}</h3>
+                            <span class="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-semibold rounded">บ้านเลขที่: ${r.houseNo}</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-calendar mr-1"></i>วันที่สำรวจ: ${r.date}</p>
+                        <p class="text-xs text-slate-600 mt-2">จุดความเสียหาย: <span class="font-semibold">${total} จุด</span> (เสร็จสิ้น ${completed} จุด)</p>
+                        <div class="w-full bg-slate-100 rounded-full h-2 mt-2">
+                            <div class="bg-emerald-500 h-2 rounded-full" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-2 pt-3 border-t">
+                        <button onclick="editRecord('${r.id}')" class="px-3 py-1.5 bg-amber-500 text-white text-xs font-medium rounded hover:bg-amber-600"><i class="fa-solid fa-pen-to-square mr-1"></i>แก้ไข</button>
+                        <button onclick="deleteRecord('${r.id}')" class="px-3 py-1.5 bg-red-500 text-white text-xs font-medium rounded hover:bg-red-600"><i class="fa-solid fa-trash mr-1"></i>ลบ</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
         function editRecord(id) {
-            const rec = houseRecords.find(r => r.id === id);
-            if (!rec) return;
+            const records = loadRecords();
+            const r = records.find(item => item.id === id);
+            if (!r) return;
 
-            switchTab('formTab');
+            document.getElementById('record-id').value = r.id;
+            document.getElementById('owner-name').value = r.owner;
+            document.getElementById('house-no').value = r.houseNo;
+            document.getElementById('survey-date').value = r.date;
+            document.getElementById('form-mode-badge').innerText = "แก้ไขข้อมูล: " + r.owner;
 
-            document.getElementById('editingId').value = rec.id;
-            document.getElementById('ownerName').value = rec.ownerName;
-            document.getElementById('houseNumber').value = rec.houseNumber;
-            document.getElementById('surveyDate').value = rec.surveyDate;
+            const container = document.getElementById('damage-items-container');
+            container.innerHTML = '';
+            r.items.forEach(item => addDamageItemRow(item));
 
-            const tbody = document.getElementById('damageTableBody');
+            if (r.sigProject) {
+                const img = new Image();
+                img.onload = () => contexts['project'].drawImage(img, 0, 0);
+                img.src = r.sigProject;
+            }
+            if (r.sigOwner) {
+                const img = new Image();
+                img.onload = () => contexts['owner'].drawImage(img, 0, 0);
+                img.src = r.sigOwner;
+            }
+
+            switchTab(1);
+        }
+
+        function deleteRecord(id) {
+            if (confirm('คุณต้องการลบรายการนี้ใช่หรือไม่?')) {
+                let records = loadRecords();
+                records = records.filter(r => r.id !== id);
+                localStorage.setItem('damage_records', JSON.stringify(records));
+                renderRecordsList();
+                updateDashboard();
+            }
+        }
+
+        function updateDashboard() {
+            const records = loadRecords();
+            let totalHouses = records.length;
+            let totalDamages = 0;
+            let completedCount = 0;
+            let statusCounts = { 'รอดำเนินการ': 0, 'กำลังดำเนินการ': 0, 'เสร็จสิ้น': 0 };
+            let houseDamageMap = {};
+
+            records.forEach(r => {
+                houseDamageMap[r.houseNo] = (houseDamageMap[r.houseNo] || 0) + r.items.length;
+                r.items.forEach(i => {
+                    totalDamages++;
+                    if (statusCounts[i.status] !== undefined) statusCounts[i.status]++;
+                    if (i.status === 'เสร็จสิ้น') completedCount++;
+                });
+            });
+
+            const progress = totalDamages > 0 ? Math.round((completedCount / totalDamages) * 100) : 0;
+
+            document.getElementById('stat-total-houses').innerText = totalHouses;
+            document.getElementById('stat-total-damages').innerText = totalDamages;
+            document.getElementById('stat-completed').innerText = completedCount;
+            document.getElementById('stat-progress').innerText = progress + '%';
+
+            // Render Charts
+            if (charts.status) charts.status.destroy();
+            charts.status = new Chart(document.getElementById('statusChart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['รอดำเนินการ', 'กำลังดำเนินการ', 'เสร็จสิ้น'],
+                    datasets: [{ data: [statusCounts['รอดำเนินการ'], statusCounts['กำลังดำเนินการ'], statusCounts['เสร็จสิ้น']], backgroundColor: ['#f59e0b', '#3b82f6', '#10b981'] }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            if (charts.house) charts.house.destroy();
+            charts.house = new Chart(document.getElementById('houseChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(houseDamageMap),
+                    datasets: [{ label: 'จำนวนจุดเสียหาย', data: Object.values(houseDamageMap), backgroundColor: '#3b82f6' }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+            });
+        }
+
+        function exportPDF() {
+            const owner = document.getElementById('owner-name').value;
+            const houseNo = document.getElementById('house-no').value;
+            const date = document.getElementById('survey-date').value;
+
+            if (!owner || !houseNo) {
+                alert('กรุณากรอกชื่อเจ้าของบ้านและบ้านเลขเหล็กก่อนดาวน์โหลด PDF');
+                return;
+            }
+
+            document.getElementById('pdf-header-info').innerHTML = `
+                <p><b>ชื่อเจ้าของบ้าน:</b> ${owner}</p>
+                <p><b>บ้านเลขที่:</b> ${houseNo}</p>
+                <p><b>วันที่สำรวจ:</b> ${date}</p>
+            `;
+
+            const tbody = document.getElementById('pdf-table-body');
             tbody.innerHTML = '';
 
-            rec.items.forEach(item => {
-                addDamageRow(item);
-            });
+            document.querySelectorAll('.damage-item-card').forEach((card, idx) => {
+                const descBefore = card.querySelector('.item-desc-before').value;
+                const imgBefore = card.querySelector('.item-img-before-data').value;
+                const descAfter = card.querySelector('.item-desc-after').value;
+                const imgAfter = card.querySelector('.item-img-after-data').value;
+                const status = card.querySelector('.item-status').value;
 
-            // Restore Signatures
-            if (rec.repSignature) {
-                hasRepSig = true;
-                loadSignatureToCanvas(repCanvas, repCtx, rec.repSignature);
-            } else {
-                clearSignature('rep');
-            }
-
-            if (rec.ownerSignature) {
-                hasOwnerSig = true;
-                loadSignatureToCanvas(ownerCanvas, ownerCtx, rec.ownerSignature);
-            } else {
-                clearSignature('owner');
-            }
-        }
-
-        // Generate and Print PDF
-        function generatePDF() {
-            const ownerName = document.getElementById('ownerName').value.trim() || '-';
-            const houseNumber = document.getElementById('houseNumber').value.trim() || '-';
-            const surveyDate = document.getElementById('surveyDate').value || '-';
-
-            // Fill PDF Template Text
-            document.getElementById('pdfOwnerName').textContent = ownerName;
-            document.getElementById('pdfHouseNumber').textContent = houseNumber;
-            document.getElementById('pdfSurveyDate').textContent = surveyDate;
-            document.getElementById('pdfSignOwnerName').textContent = ownerName;
-
-            // Fill PDF Signatures
-            const repImgEl = document.getElementById('pdfRepSignatureImg');
-            const repBlankEl = document.getElementById('pdfRepSignatureBlank');
-            if (hasRepSig) {
-                repImgEl.src = repCanvas.toDataURL();
-                repImgEl.style.display = 'block';
-                repBlankEl.style.display = 'none';
-            } else {
-                repImgEl.style.display = 'none';
-                repBlankEl.style.display = 'block';
-            }
-
-            const ownerImgEl = document.getElementById('pdfOwnerSignatureImg');
-            const ownerBlankEl = document.getElementById('pdfOwnerSignatureBlank');
-            if (hasOwnerSig) {
-                ownerImgEl.src = ownerCanvas.toDataURL();
-                ownerImgEl.style.display = 'block';
-                ownerBlankEl.style.display = 'none';
-            } else {
-                ownerImgEl.style.display = 'none';
-                ownerBlankEl.style.display = 'block';
-            }
-
-            const pdfTbody = document.getElementById('pdfTableBody');
-            pdfTbody.innerHTML = '';
-
-            const rows = document.querySelectorAll('#damageTableBody tr');
-            rows.forEach((row, idx) => {
-                const beforeImgEl = row.querySelector('.before-preview img');
-                const afterImgEl = row.querySelector('.after-preview img');
-                const beforeDesc = row.querySelector('.before-desc').value || '-';
-                const afterDesc = row.querySelector('.after-desc').value || '-';
-                const status = row.querySelector('.item-status').value;
-
-                const pdfTr = document.createElement('tr');
-                pdfTr.innerHTML = `
-                    <td style="text-align: center; vertical-align: middle;">${idx + 1}</td>
-                    <td style="text-align: center; vertical-align: middle;">
-                        ${beforeImgEl ? `<img src="${beforeImgEl.src}" style="max-height: 80px; max-width: 100px; display: inline-block; border-radius: 4px;">` : '<span style="color:#94a3b8; font-size: 10px;">ไม่มีรูป</span>'}
-                    </td>
-                    <td style="vertical-align: top;">${beforeDesc}</td>
-                    <td style="text-align: center; vertical-align: middle;">
-                        ${afterImgEl ? `<img src="${afterImgEl.src}" style="max-height: 80px; max-width: 100px; display: inline-block; border-radius: 4px;">` : '<span style="color:#94a3b8; font-size: 10px;">ไม่มีรูป</span>'}
-                    </td>
-                    <td style="vertical-align: top;">${afterDesc}</td>
-                    <td style="text-align: center; font-size: 10px; font-weight: bold; vertical-align: middle;">${status}</td>
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="border border-slate-300 p-2 text-center">${idx + 1}</td>
+                    <td class="border border-slate-300 p-2 text-center">${imgBefore ? `<img src="${imgBefore}" style="width:60px; height:60px; object-fit:cover; margin:auto;">` : '-'}</td>
+                    <td class="border border-slate-300 p-2">${descBefore}</td>
+                    <td class="border border-slate-300 p-2 text-center">${imgAfter ? `<img src="${imgAfter}" style="width:60px; height:60px; object-fit:cover; margin:auto;">` : '-'}</td>
+                    <td class="border border-slate-300 p-2">${descAfter}<br><span class="text-xs font-semibold text-blue-600">[สถานะ: ${status}]</span></td>
                 `;
-                pdfTbody.appendChild(pdfTr);
+                tbody.appendChild(tr);
             });
 
-            // Trigger html2pdf Conversion
-            const element = document.getElementById('pdfPrintArea');
-            const opt = {
-                margin:       10,
-                filename:     `รายการความเสียหาย_${houseNumber}_${surveyDate}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
+            document.getElementById('pdf-sig-project').innerHTML = `<img src="${canvases.project.toDataURL()}" style="max-height: 50px; margin: auto;">`;
+            document.getElementById('pdf-sig-owner').innerHTML = `<img src="${canvases.owner.toDataURL()}" style="max-height: 50px; margin: auto;">`;
 
-            showToast("กำลังสร้างเอกสาร PDF...", "info");
-            html2pdf().set(opt).from(element).save().then(() => {
-                showToast("ดาวน์โหลด PDF สำเร็จแล้ว");
+            const element = document.getElementById('pdf-template');
+            element.classList.remove('hidden');
+
+            html2pdf().from(element).set({
+                margin: 10,
+                filename: `รายงานความเสียหาย_บ้านเลขที่_${houseNo}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).save().then(() => {
+                element.classList.add('hidden');
             });
-        }
-
-        // Show Toast Message
-        function showToast(msg, type = "success") {
-            const toast = document.getElementById('toast');
-            const toastMsg = document.getElementById('toast-message');
-            const toastIcon = document.getElementById('toast-icon');
-
-            toastMsg.textContent = msg;
-
-            if (type === "error") {
-                toast.className = "fixed bottom-5 right-5 z-50 transform transition-all duration-300 bg-red-600 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-3";
-                toastIcon.className = "fa-solid fa-triangle-exclamation text-xl";
-            } else if (type === "info") {
-                toast.className = "fixed bottom-5 right-5 z-50 transform transition-all duration-300 bg-sky-600 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-3";
-                toastIcon.className = "fa-solid fa-spinner fa-spin text-xl";
-            } else {
-                toast.className = "fixed bottom-5 right-5 z-50 transform transition-all duration-300 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-3";
-                toastIcon.className = "fa-solid fa-circle-check text-xl";
-            }
-
-            toast.classList.remove('translate-y-20', 'opacity-0');
-            
-            setTimeout(() => {
-                toast.classList.add('translate-y-20', 'opacity-0');
-            }, 3000);
-        }
-
-        // Seed Initial Mock Data
-        function seedMockData() {
-            houseRecords = [
-                {
-                    id: '1',
-                    ownerName: 'คุณสมชาย มีสุข',
-                    houseNumber: '101/12',
-                    surveyDate: '2025-02-10',
-                    overallStatus: 'กำลังดำเนินการ',
-                    items: [
-                        {
-                            beforeImg: 'https://placehold.co/300x200/e2e8f0/475569?text=Crack+Wall',
-                            beforeDesc: 'พบรอยแตกร้าวบริเวณผนังปูนภายนอกฝั่งทิศตะวันออก ความยาวประมาณ 1.5 เมตร',
-                            afterImg: 'https://placehold.co/300x200/dcfce7/166534?text=Repaired+Wall',
-                            afterDesc: 'ทำการฉาบปิดรอยโป๊วด้วย PU Sealant พร้อมทาสีทับหน้าเรียบร้อยแล้ว',
-                            status: 'แก้ไขเรียบร้อยแล้ว'
-                        },
-                        {
-                            beforeImg: 'https://placehold.co/300x200/e2e8f0/475569?text=Fence+Damage',
-                            beforeDesc: 'เสารั้วบ้านด้านหน้ามีรอยกะเทาะจากการกระแทก',
-                            afterImg: '',
-                            afterDesc: '',
-                            status: 'กำลังดำเนินการ'
-                        }
-                    ]
-                },
-                {
-                    id: '2',
-                    ownerName: 'คุณนภา วงศ์สว่าง',
-                    houseNumber: '101/14',
-                    surveyDate: '2025-02-12',
-                    overallStatus: 'แก้ไขเรียบร้อยแล้ว',
-                    items: [
-                        {
-                            beforeImg: 'https://placehold.co/300x200/e2e8f0/475569?text=Tile+Crack',
-                            beforeDesc: 'กระเบื้องปูลานจอดรถแตกชำรุด จำนวน 3 แผ่น',
-                            afterImg: 'https://placehold.co/300x200/dcfce7/166534?text=New+Tiles',
-                            afterDesc: 'รื้อและสกัดปูรื้อเปลี่ยนกระเบื้องใหม่ลายเดิมเรียบร้อยแล้ว',
-                            status: 'แก้ไขเรียบร้อยแล้ว'
-                        }
-                    ]
-                }
-            ];
-            saveRecordsToStorage();
         }
     </script>
 </body>
